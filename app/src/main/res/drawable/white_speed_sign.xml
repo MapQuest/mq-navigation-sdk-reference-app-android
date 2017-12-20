@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FFFFFF" />
+    <stroke android:width="@dimen/speed_sign_border_thickness" android:color="@color/speed_sign_border_color" />
+    <corners android:radius="@dimen/speed_sign_border_radius"/>
+</shape>

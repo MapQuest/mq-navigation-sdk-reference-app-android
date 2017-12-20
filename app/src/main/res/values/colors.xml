@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="maneuverApproachBarBackground">#666666</color>
+    <color name="speed_sign_border_color">#000000</color>
+
+    <color name="marker_greeen">#6BBD31</color>
+    <color name="marker_yellow">#FFDF37</color>
+    <color name="marker_orange">#ED9E00</color>
+    <color name="marker_red">#FF3737</color>
+    <color name="marker_blue">#0000FF</color>
+
+    <color name="red">#FF4444</color>
+    <color name="divider_grey">#dbdbdb</color>
+    <color name="route_name_text_color">#1a1a1a</color>
+
+    <color name="scheme_lightest_grey">#cccccc</color>
+    <color name="scheme_med_grey">#707070</color>
+    <color name="disabled_grey">#a0a0a0</color>
+    <color name="scheme_darker_grey">#333333</color>
+
+    <color name="background_white">#eaeaea</color>
+
+    <color name="mq_green">#a5cc00</color>
+
+    <color name="white">#ffffffff</color>
+    <color name="black">#000000</color>
+
+    <color name="charcoal">#191919</color>
+</resources>

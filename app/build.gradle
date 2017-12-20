@@ -1,0 +1,57 @@
+apply plugin: 'com.android.application'
+
+def defaultAppVersionCode = '1'
+def appVersionCode = System.getProperty('versionCode', defaultAppVersionCode).toInteger()
+
+repositories {
+    maven { url 'https://maven.google.com' }
+}
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
+
+    defaultConfig {
+        applicationId "com.mapquest.navigation.sampleapp"
+        minSdkVersion 16
+        targetSdkVersion 26
+        versionCode appVersionCode
+        versionName "1.4"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    applicationVariants.all { variant ->
+        variant.buildConfigField "String", "API_KEY", getApiKey()
+        variant.resValue "string", "API_KEY", getApiKey()
+    }
+}
+
+def getApiKey() {
+    def props = new Properties()
+    file("mapquest.properties").withInputStream { props.load(it) }
+    return "\"" + props.getProperty("api_key") + "\""
+}
+
+dependencies {
+    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile 'com.android.support:design:26.1.0'
+
+    compile('com.mapquest:navigation:3.1.1')          // the MapQuest Navigation SDK
+    compile('com.mapzen.android:lost:3.0.2')          // used for Location Acquisition (GPS)
+
+    // note: the MapQuest Mapping SDK (i.e. "MapView") used to display our route to navigate
+    compile('com.mapquest:mapping-android-sdk:1.6.3') {
+        exclude group: 'com.android.support'
+    }
+
+    compile("com.mapquest:search-ahead-v3:1.2.9")     // for the MapQuest "Search Ahead" feature (optional)
+
+    // for butterknife, the well-known view binding lib
+    compile 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+}

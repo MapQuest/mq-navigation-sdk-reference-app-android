@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This will be the selected color used in place of a ripple (which only works on v21+) -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/scheme_med_grey" android:state_focused="true"/>
+    <item android:drawable="@color/scheme_med_grey" android:state_pressed="true"/>
+    <item android:drawable="@android:color/transparent"/>
+</selector>

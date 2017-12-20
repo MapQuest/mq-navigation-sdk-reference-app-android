@@ -1,0 +1,44 @@
+<resources>
+    <string name="app_name">MapQuest Navigation (SAMPLE)</string>
+    <string name="left_turn_arrow">\u21B0</string>
+    <string name="right_turn_arrow">\u21B1</string>
+    <string name="none">none</string>
+    <string name="set_logging_email_title">Set Logging Email</string>
+    <string name="set_logging_email_dialog_message">This is the display email for Miner.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="display_additional_debug_info">Display additional debug info</string>
+    <string name="change_logging_email_miner">Change Logging Email (Miner)</string>
+    <string name="enable_logging">Enable Logging</string>
+    <string name="journey_logging_enabled">Journey Logging Enabled</string>
+    <string name="journey_logging_disabled">Journey Logging Disabled</string>
+    <string name="no_location">No Location</string>
+    <string name="logging_enabled">Logging ENABLED</string>
+    <string name="logging_disabled">Logging DISABLED</string>
+    <string name="hockeyAppBuildNumberText">Build</string>
+    <string name="list_view_title">List</string>
+    <string name="map_view_title">Map</string>
+    <string name="no_location_text">No Location</string>
+    <string name="routing_mode_dialog_title">Choose Routing Mode</string>
+    <string name="session_replay_failed_dialog_title">Session Replay Failed</string>
+    <string name="session_replay_failed_dialog_message">Sorry, we were unable to find a session with that id.</string>
+    <string name="session_replay_dialog_title">Enter Your Session ID</string>
+    <string name="sym_close">x</string>
+    <string name="maneuver_distance_metric">%1$d meters</string>
+    <string name="maneuver_distance_imperial">%1$.2f miles</string>
+
+    <!-- Search Ahead -->
+    <string name="enter_location">Enter Location</string>
+    <string name="max_search_character_limit">Sorry, unable to handle more than 100 characters in search.</string>
+    <string name="home">Home</string>
+    <string name="work">Work</string>
+    <string name="sym_search">Q</string>
+
+    <!-- Fonts -->
+    <string name="asset_font_filename_bold">fonts/raleway-bold-webfont.ttf</string>
+    <string name="asset_font_filename_flama_medium">fonts/Flama-Medium.otf</string>
+    <string name="asset_font_filename_mapquest_icons">fonts/MapQuestIcons1.6.9.ttf</string>
+    <string name="asset_font_filename_mapquest_weather_icons">fonts/MapQuestWeatherIcons-1.0.3.otf</string>
+    <string name="asset_font_filename_regular">fonts/raleway-regular-webfont.ttf</string>
+    <string name="asset_font_filename_semibold">fonts/raleway-semibold-webfont.ttf</string>
+</resources>

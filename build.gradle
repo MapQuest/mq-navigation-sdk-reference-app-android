@@ -1,0 +1,36 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.3'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
+
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        maven {
+            url "https://maven.google.com"
+        }
+        // NOTE: the following repo is used only for testing a new SDK artifact, internally
+        // -- so do not share this in src for public demo app!
+        maven {
+            url "https://artifactory.us-east-1.aws.aol.com/artifactory/maven-mapquest-us-east-1-local"
+        }
+        maven {
+            url "http://artifactory.cloud.mapquest.com/artifactory/et-android-binaries"
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
