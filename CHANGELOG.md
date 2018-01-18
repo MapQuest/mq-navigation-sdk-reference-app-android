@@ -2,6 +2,14 @@
 
 ### Sample App
 
+#### 3.1.2
+
+* Updated okhttp dependency to latest version 3.9.1. This brings in the fix for the fatal exception made in version [3.8.1](https://github.com/square/okhttp/blob/master/CHANGELOG.md)  as well as other updates to the library.
+
+#### 3.1.1
+
+* Moved mapzen dependency & the default location provider implementation out of the sdk and into the testharness.
+
 #### 3.1.0
 
 * significant architectural changes to improve integration of SDK, Location Acquisition, Activity task-stack, and Background Service lifecycle

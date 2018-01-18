@@ -31,16 +31,20 @@ Supporting Components: Implementation Notes
 -----
 
 #### Supplying a LocationProviderAdapter
-When navigating a route using the `NavigationManager`, the user's location updates are provided to the SDK by a _location provider_. The abstract class `LocationProviderAdapter` in the SDK provides a generic "wrapper" for any location-provider of your choice -- for example, a native Google location service, a "mocked" location-provider (e.g. used during testing), or one of the commonly used 3rd-party location libraries such as _Mapzen Lost_. The Navigation SDK sample app provides an example implementation using this library.
+When navigating a route using the `NavigationManager`, the user's location updates are provided to the SDK by a _location provider_. The abstract class `LocationProviderAdapter` in the SDK provides a generic "wrapper" for any location-provider of your choice -- for example, a native Google location service, a "mocked" location-provider (e.g. used during testing), or one of the commonly used 3rd-party location libraries such as _Mapzen Lost_. 
+
+Note: The Navigation SDK sample app provides a recommended, default location provider implementation, namely `MapzenLocationProviderAdapter`.  It is recommended that developers use this implementation, or, if they wish to provide their own, adhere to the recommended guidelines specified in the LocationProviderAdapter javadocs to ensure that other components in the Navigation SDK behave correctly. 
 
 Here's a description of the key methods in the `LocationProviderAdapter` class:
 
 ##### Abstract Methods
 `public void requestLocationUpdates()`  
-This method's implementation should initiate location updates to be processed by the SDK. It should also set up the LocationListener member variable to call `onLocationChanged(Location location)` on every location update.
+The concrete implementation of this method should immediately initiate recurring location updates at an appropriate interval, typically at a minimum interval of approximately <i>once per second</i>. It should also set up the LocationListener member variable to call `onLocationChanged(Location location)` on every location update.
+
+CAVEAT: If the location update interval is too long, the Navigation Manager might not perform as expected; conversely, if it is much shorter than once per second, this could prove wasteful of battery-life without any real benefits to navigation accuracy or user-experience.
 
 `public void cancelLocationUpdates()`  
-This method's implementation should stop further location updates from occuring; until `requestLocationUpdates()` is called again.
+The concrete implementation of this method should immediately cancel all recurring location updates; until `requestLocationUpdates()` is called again.
 
 `public Location getLastKnownLocation()`  
 This method's implementation should return the last location update that was received -- if none has occurred, then it may return _null_.

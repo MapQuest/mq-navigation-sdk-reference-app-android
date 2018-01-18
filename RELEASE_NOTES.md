@@ -24,6 +24,15 @@ Version 3 of the Mapquest Navigation SDK is a ground-up rewrite aimed at creatin
 
 ## Release Notes
 
+### MQNavigation 3.1.2 (Android)
+#### Notable Updates
+- Update okhttp version to 3.9.1 to include fatal exception fix (fixed in version 3.8.1) and to point to the latest version.
+
+### MQNavigation 3.1.1 (Android)
+#### Notable Updates
+- Move LocationProviderAdapter into location package.
+- Remove mapzen dependency & move default LocationProviderAdapter out of sdk & into sample app.
+
 ### MQNavigation 3.1.0 (Android)
 #### Notable Updates
 - Better support for metric and US systems of measurement, as the display-units used in prompt text is now configurable.

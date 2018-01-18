@@ -41,7 +41,7 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:26.1.0'
 
-    compile('com.mapquest:navigation:3.1.1')          // the MapQuest Navigation SDK
+    compile('com.mapquest:navigation:3.1.2')          // the MapQuest Navigation SDK
     compile('com.mapzen.android:lost:3.0.2')          // used for Location Acquisition (GPS)
 
     // note: the MapQuest Mapping SDK (i.e. "MapView") used to display our route to navigate
