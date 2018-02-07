@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Inflated into a LinearLayout -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:id="@+id/bar_background"
+        android:layout_height="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:weightSum="1"
+        android:gravity="right"
+        android:background="@color/maneuverApproachBarBackground">
+
+        <View
+            android:id="@+id/bar"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/maneuver_indicator"
+        android:text="@string/right_turn_arrow"
+        android:textColor="@android:color/white"
+        android:textSize="30dp"
+        android:textStyle="bold"
+        android:layout_height="@dimen/maneuver_approach_block_size"
+        android:layout_width="@dimen/maneuver_approach_block_size"
+        android:gravity="center"/>
+
+</merge>

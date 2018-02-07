@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.mapquest.navigation.sampleapp.activity.NavigationActivity">
+
+    <!-- Upcoming maneuver bar -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@drawable/black_bottom_border">
+
+        <ImageView
+            android:id="@+id/next_maneuver_icon"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"/>
+
+        <com.mapquest.navigation.sampleapp.view.FontTextView
+            android:id="@+id/next_maneuver_distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/next_maneuver_icon"
+            android:layout_toRightOf="@+id/next_maneuver_icon"
+            android:text="-"
+            android:textSize="30sp"
+            android:textStyle="bold"/>
+
+        <com.mapquest.navigation.sampleapp.view.FontTextView
+            android:id="@+id/next_maneuver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/next_maneuver_distance"
+            android:layout_below="@+id/next_maneuver_distance"
+            android:layout_gravity="fill_horizontal"
+            android:text="-"
+            android:textSize="18sp"/>
+
+    </RelativeLayout>
+
+    <!-- Map Content (note: note user can toggle btw this and the Directions List) -->
+
+    <RelativeLayout
+        android:id="@+id/main_nav_map_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <android.support.design.widget.CoordinatorLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/main_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.mapquest.mapping.maps.MapView
+                android:id="@+id/map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:mapquest_app_key="@string/API_KEY"/>
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/gps_center_on_user_location_button_navigation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center"
+                android:layout_margin="16dp"
+                android:paddingTop="25dp"
+                android:src="@drawable/ic_gps_fixed_white_24dp"
+                android:visibility="visible"
+                app:backgroundTint="@color/mapbox_blue"
+                app:borderWidth="0dp"
+                app:elevation="6dp"
+                app:fabSize="normal"
+                app:layout_anchor="@id/map"
+                app:layout_anchorGravity="left|start|bottom"/>
+
+        </android.support.design.widget.CoordinatorLayout>
+
+
+        <!-- Container to allow the lane guidance bar to smoosh the other map overlays down -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <com.mapquest.navigation.sampleapp.view.LaneGuidanceBar
+                android:id="@+id/maneuver_lanes"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:visibility="gone"/>
+
+            <!-- Map overlay -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <com.mapquest.navigation.sampleapp.view.ManeuverApproachBar
+                        android:id="@+id/left_maneuver_approach_bar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:orientation="left"/>
+
+                    <View
+                        android:layout_width="100dp"
+                        android:layout_height="1dp"
+                        android:background="@android:color/transparent"/>
+
+                    <com.mapquest.navigation.sampleapp.view.ManeuverApproachBar
+                        android:id="@+id/right_maneuver_approach_bar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:orientation="right"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentRight="true"
+                    android:orientation="vertical"
+                    android:padding="@dimen/speed_limit_margin">
+
+                    <com.mapquest.navigation.sampleapp.view.FontTextView
+                        android:id="@+id/max_speed_limit_label"
+                        android:layout_width="@dimen/speed_limit_max_width"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="@dimen/speed_limit_margin"
+                        android:background="@drawable/white_speed_sign"
+                        android:gravity="center"
+                        android:padding="@dimen/speed_limit_padding"
+                        android:textSize="22dp"
+                        android:textStyle="bold"
+                        android:visibility="gone"/>
+
+                    <com.mapquest.navigation.sampleapp.view.FontTextView
+                        android:id="@+id/advisory_max_speed_limit_label"
+                        android:layout_width="@dimen/speed_limit_max_width"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="@dimen/speed_limit_margin"
+                        android:background="@drawable/orange_speed_sign"
+                        android:gravity="center"
+                        android:padding="@dimen/speed_limit_padding"
+                        android:textSize="22dp"
+                        android:textStyle="bold"
+                        android:visibility="gone"/>
+
+                    <com.mapquest.navigation.sampleapp.view.FontTextView
+                        android:id="@+id/school_zone_max_speed_limit_label"
+                        android:layout_width="@dimen/speed_limit_max_width"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="@dimen/speed_limit_margin"
+                        android:background="@drawable/yellow_speed_sign"
+                        android:gravity="center"
+                        android:padding="@dimen/speed_limit_padding"
+                        android:textSize="22dp"
+                        android:textStyle="bold"
+                        android:visibility="gone"/>
+
+                </LinearLayout>
+
+                <com.mapquest.navigation.sampleapp.view.FontTextView
+                    android:id="@+id/follow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_centerInParent="true"
+                    android:layout_marginBottom="15dp"
+                    android:background="@drawable/black_bubble"
+                    android:padding="5dp"
+                    android:text="Re-Center"
+                    android:textAllCaps="true"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"/>
+
+            </RelativeLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#AAFF0000"
+                android:gravity="center"
+                android:paddingBottom="5dp"
+                android:paddingTop="5dp">
+
+                <com.mapquest.navigation.sampleapp.view.FontTextView
+                    android:id="@+id/status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <com.mapquest.navigation.sampleapp.view.FontTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" • "
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <com.mapquest.navigation.sampleapp.view.FontTextView
+                    android:id="@+id/gps_accuracy"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <!-- Directions List (note: note user can toggle btw this and the Map View) -->
+
+    <RelativeLayout
+        android:id="@+id/directions_list_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <ListView xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:id="@+id/directions_list_view"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:background="@android:color/white"
+                  android:cacheColorHint="@android:color/white"
+                  android:divider="@color/divider_grey"
+                  android:dividerHeight="1dp"/>
+
+    </RelativeLayout>
+
+    <!-- Arrival bar -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:background="@drawable/black_top_border"
+        android:padding="@dimen/medium_padding">
+
+        <TextView
+            android:id="@+id/stop"
+            android:layout_width="45dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="\u2716"
+            android:textSize="24dp"/>
+
+        <com.mapquest.navigation.sampleapp.view.FontTextView
+            android:id="@+id/time_of_arrival"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@id/stop"
+            android:text=""
+            android:textSize="24sp"/>
+
+        <com.mapquest.navigation.sampleapp.view.FontTextView
+            android:id="@+id/remaining_distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/time_of_arrival"
+            android:layout_toRightOf="@+id/stop"
+            android:text=""
+            android:textSize="18sp"/>
+
+        <TextView
+            android:id="@+id/directions_list_toggle_button_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="20dp"
+            android:gravity="center"
+            android:text="@string/list_view_title"
+            android:textColor="@color/mapbox_blue"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+    </RelativeLayout>
+
+</LinearLayout>

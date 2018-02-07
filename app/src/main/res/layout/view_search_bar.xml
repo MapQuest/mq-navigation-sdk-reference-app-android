@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:layout_width="match_parent"
+              android:layout_height="@dimen/search_bar_height"
+              android:clickable="true"
+              android:focusable="true"
+              android:focusableInTouchMode="true"
+              android:orientation="horizontal"
+              android:gravity="center_vertical"
+              android:padding="@dimen/small_padding">
+
+    <LinearLayout
+        android:id="@+id/search_bar_search_container"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/small_margin"
+        android:layout_marginBottom="@dimen/small_margin"
+        android:layout_marginRight="@dimen/small_margin"
+        android:background="@drawable/rounded_white_background"
+        android:animateLayoutChanges="true" >
+
+        <ImageView
+            android:id="@+id/search_ahead_list_item_icon"
+            android:layout_width="@dimen/search_symbol_size"
+            android:layout_height="@dimen/search_symbol_size"
+            android:layout_gravity="center_vertical"
+            android:paddingBottom="@dimen/search_ahead_list_item_icon_bottom_margin"
+            android:paddingLeft="@dimen/search_ahead_list_item_icon_left_padding"
+            android:paddingRight="@dimen/search_ahead_list_item_icon_right_padding"
+            android:scaleType="centerInside" />
+
+        <com.mapquest.navigation.sampleapp.searchahead.view.MQEditText
+            android:id="@+id/text_entry"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center_vertical|fill_horizontal"
+            android:imeActionLabel="Search"
+            android:imeOptions="actionSearch|flagNoExtractUi"
+            android:inputType="textNoSuggestions"
+            android:textCursorDrawable="@drawable/cursor_green"
+            android:textColor="@android:color/black"
+            android:maxLines="1"/>
+
+        <com.mapquest.navigation.sampleapp.searchahead.view.MQTextView
+            android:id="@+id/clear_button"
+            style="@style/MQSymbolInactive"
+            android:background="@drawable/borderless_ripple_dark"
+            android:text="@string/sym_close"
+            android:textSize="@dimen/search_ahead_clear_button_text_size" />
+
+    </LinearLayout>
+
+    <com.mapquest.navigation.sampleapp.searchahead.view.MQTextView
+        android:id="@+id/cancel_button"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:gravity="center_vertical"
+        android:paddingLeft="@dimen/small_padding"
+        android:paddingRight="@dimen/small_padding"
+        android:text="@string/cancel"
+        android:textColor="@color/mq_green"
+        android:textSize="@dimen/search_ahead_cancel_button_text_size"
+        app:MQTypeface="semibold"
+        android:visibility="gone"
+        android:background="@drawable/borderless_ripple_light" />
+
+</LinearLayout>
