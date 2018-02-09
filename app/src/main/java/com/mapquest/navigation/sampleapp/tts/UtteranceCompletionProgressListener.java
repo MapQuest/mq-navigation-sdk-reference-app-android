@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public class UtteranceCompletionProgressListener extends UtteranceProgressListener {
     private Map<String, SpeechListener> mListenersByUtteranceId = new HashMap<>();
+    private TextToSpeech mTextToSpeech;
 
     public void addListener(String utteranceId, SpeechListener listener) {
         mListenersByUtteranceId.put(utteranceId, listener);

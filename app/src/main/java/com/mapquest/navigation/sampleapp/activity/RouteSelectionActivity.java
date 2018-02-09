@@ -1,16 +1,12 @@
 package com.mapquest.navigation.sampleapp.activity;
 
-import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColor;
-import static com.mapquest.navigation.sampleapp.util.ColorUtil.setOpacity;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
-
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.ColorRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,7 +14,9 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -39,29 +37,33 @@ import com.mapquest.navigation.ShapeSegmenter;
 import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.RouteService;
 import com.mapquest.navigation.dataclient.listener.RoutesResponseListener;
-import com.mapquest.navigation.internal.util.LogUtil;
-import com.mapquest.navigation.location.LocationProviderAdapter;
-import com.mapquest.navigation.model.SystemOfMeasurement;
-import com.mapquest.navigation.sampleapp.BuildConfig;
-import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
-import com.mapquest.navigation.sampleapp.R;
-import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragment;
-import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragmentCallbacks;
-import com.mapquest.navigation.sampleapp.searchahead.SearchAheadResult;
-import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
-import com.mapquest.navigation.sampleapp.searchahead.util.MQFontProviderUtil;
-import com.mapquest.navigation.sampleapp.searchahead.util.AddressDisplayUtil;
-import com.mapquest.navigation.sampleapp.util.LocationUtil;
 import com.mapquest.navigation.internal.ShapeCalculator;
 import com.mapquest.navigation.internal.ShapeCalculator.LineStringPoint;
+import com.mapquest.navigation.internal.dataclient.NavigationRouteServiceFactory;
 import com.mapquest.navigation.internal.location.listener.LocationListener;
+import com.mapquest.navigation.internal.util.LogUtil;
+import com.mapquest.navigation.location.LocationProviderAdapter;
 import com.mapquest.navigation.model.CongestionSpan;
 import com.mapquest.navigation.model.Route;
 import com.mapquest.navigation.model.RouteLeg;
+import com.mapquest.navigation.model.RouteOptionType;
 import com.mapquest.navigation.model.RouteOptions;
+import com.mapquest.navigation.model.SystemOfMeasurement;
 import com.mapquest.navigation.model.location.Coordinate;
 import com.mapquest.navigation.model.location.Location;
+import com.mapquest.navigation.sampleapp.BuildConfig;
+import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
+import com.mapquest.navigation.sampleapp.R;
+import com.mapquest.navigation.sampleapp.location.MapzenLocationProviderAdapter;
+import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragment;
+import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragmentCallbacks;
+import com.mapquest.navigation.sampleapp.searchahead.SearchAheadResult;
+import com.mapquest.navigation.sampleapp.searchahead.SearchBarView;
+import com.mapquest.navigation.sampleapp.searchahead.util.AddressDisplayUtil;
+import com.mapquest.navigation.sampleapp.searchahead.util.MQFontProviderUtil;
 import com.mapquest.navigation.sampleapp.searchahead.util.MapUtils;
+import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
+import com.mapquest.navigation.sampleapp.util.LocationUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -75,6 +77,11 @@ import java.util.Set;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+
+import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColor;
+import static com.mapquest.navigation.sampleapp.util.ColorUtil.setOpacity;
+import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
+import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class RouteSelectionActivity extends AppCompatActivity implements SearchAheadFragmentCallbacks {
 
@@ -97,8 +104,11 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     @BindView(R.id.start)
     protected Button mStartButton;
 
-    @BindView(R.id.search)
-    protected Button mSearchButton;
+    @BindView(R.id.retrieve_routes)
+    protected Button mRetrieveRoutesButton;
+
+    @BindView(R.id.clear_routes)
+    protected Button mClearRoutesButton;
 
     @BindView(R.id.route_name_text_view)
     protected TextView mRouteNameTextView;
@@ -107,7 +117,11 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     protected MapView mMap;
 
     private MapboxMap mMapController;
+    private OnMapLongClickListener mMapLongClickListener;
+    private ProgressDialog mRoutingDialog;
+
     private Location mLastLocation;
+    private LocationPermissionsResultListener locationPermissionsResultListener;
 
     @BindView(R.id.gps_center_on_user_location_button)
     protected FloatingActionButton mGpsCenterOnUserLocationButton;
@@ -123,8 +137,11 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         }
     }
 
+    private Coordinate mStartingCoordinate;
+    private List<Coordinate> mDestinationCoordinates = new ArrayList<>();
+
     private Marker mOriginMarker;
-    private Marker mDestinationMarker;
+    private List<Marker> mDestinationMarkers = new ArrayList<>();
 
     private RouteService mRouteService;
     private Map<Route, Set<Polyline>> mRoutePolylineSetsByRoute = new HashMap<>();
@@ -133,10 +150,16 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     private MQNavigationSampleApplication mApp;
     private LocationListener mFollowUserLocationListener;
 
+    private Float mMapExtentPaddingTop = null;
+    private Float mMapExtentPaddingBottom = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         setContentView(R.layout.activity_route_selection);
         ButterKnife.bind(this);
@@ -146,24 +169,87 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         mApp = (MQNavigationSampleApplication) getApplication();
         mRouteService = new RouteService.Builder().build(getApplicationContext(), BuildConfig.API_KEY);
 
+//        SearchBarView searchBarView = toolbar.findViewById(R.id.fake_search_bar_view);
+//        searchBarView.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                List<RouteStop> routeStops = getRouteStops();
+//                if (routeStops.isEmpty()) {
+//                    Toast.makeText(RouteSelectionActivity.this, R.string.route_stops_not_available, Toast.LENGTH_SHORT)
+//                            .show();
+//                } else {
+//                    RouteSettingsFragment routeSettingsFragment = RouteSettingsFragment.newInstance(getRouteStops());
+//
+//                    getSupportFragmentManager().beginTransaction()
+//                            .add(android.R.id.content, routeSettingsFragment, SEARCH_AHEAD_FRAGMENT_TAG)
+//                            .addToBackStack(null)
+//                            .commit();
+//                }
+//            }
+//        });
+
         mMap.onCreate(savedInstanceState);
         mMap.getMapAsync(new OnMapReadyCallback() {
             @Override
-            public void onMapReady(MapboxMap mapController) {
+            public void onMapReady(final MapboxMap mapController) {
                 mMapController = mapController;
                 initGpsButton();
 
+                // note: regular click on map will select a *route* to navigate
                 mapController.setOnMapClickListener(new RouteClickListener());
 
-                requestLocationPermissions();
+                // long-clicks on map are used to define the start and end-points for a route to request
+                mMapLongClickListener = new OnMapLongClickListener() {
+                    // long-pressed location is now the next "waypoint" destination
+                    @Override
+                    public void onMapLongClick(@NonNull LatLng clickedLocation) {
+                        Coordinate destinationCoordinate = toCoordinate(clickedLocation);
+                        addDestinationToRoute(destinationCoordinate);
+                    }
+                };
+
+                requestLocationPermissions(new LocationPermissionsResultListener() {
+                    @Override
+                    public void onRequestLocationPermissionsResult(boolean locationPermissionsWereGranted) {
+                        if (locationPermissionsWereGranted) {
+                            // OK, now that we have location permissions, init our GPS location-provider, and zoom the map-view
+                            mApp.getLocationProviderAdapter().initialize();
+                            acquireCurrentLocationAndZoom(mMapController);
+
+                        } else {
+                            // permission "denied"... so we cannot acquire the current location; explain why perms are needed
+                            final AlertDialog.Builder builder = new AlertDialog.Builder(RouteSelectionActivity.this);
+                            builder.setTitle("Location Permissions Required");
+                            builder.setMessage(
+                                    "Without Location Permissions most of the app functionality will be disabled.  " +
+                                            "You will need to restart the app and accept the Location Permissions request");
+                            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                }
+                            });
+                            builder.show();
+                        }
+                    }
+                });
             }
         });
-
         mFollowUserLocationListener = new FollowUserLocationListener();
+        mMap.onStart();
+
+        clearMappedRoutes();
+        for (Marker marker : mDestinationMarkers) {
+            removeDestinationMarker(marker);
+        }
+        mDestinationCoordinates.clear();
+
+        enableButton(mRetrieveRoutesButton, false);
+        enableButton(mClearRoutesButton, false);
     }
 
-    private void requestLocationPermissions() {
-        Log.d(TAG, "requestLocationPermissions()");
+    private void requestLocationPermissions(LocationPermissionsResultListener permissionsResultListener) {
+        this.locationPermissionsResultListener = permissionsResultListener;
+
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
             // provide an additional rationale to the user if the permission was not granted
             // and the user would benefit from additional context for the use of the permission
@@ -176,57 +262,59 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     ActivityCompat.requestPermissions(RouteSelectionActivity.this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
                             REQUEST_LOCATION_PERMISSIONS);
                 }
             });
-
             builder.show();
         } else {
             // permission has not been granted yet, so request it directly
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
                     REQUEST_LOCATION_PERMISSIONS);
         }
     }
 
-    /**
-     * Callback received when a permissions request has been completed.
-     */
+    // callback received when permission request has been acted on by user; so call our listener with the result
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         Log.d(TAG, "onRequestPermissionsResult()");
         if (requestCode == REQUEST_LOCATION_PERMISSIONS) {
-            // check if the only required permission has been granted
-            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                mApp.initializeLocationProviderAdapter();
-                acquireAndZoomToLocation(mMapController);
-                enableButton(mSearchButton, true);
-            } else {
-                final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Location Permissions Required");
-                builder.setMessage("Without Location Permissions most of the app functionality will be disabled.  You will need to restart the app and accept the Location Permissions request");
-
-                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                    }
-                });
-
-                builder.show();
-                enableButton(mSearchButton, false);
-            }
-
+            // check that the requested permission has been granted
+            boolean locationPermissionsWereGranted = (grantResults.length == 1) && (grantResults[0] == PackageManager.PERMISSION_GRANTED);
+            locationPermissionsResultListener.onRequestLocationPermissionsResult(locationPermissionsWereGranted);
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
-    private boolean hasLocationPermissions() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestLocationPermissions();
-            return false;
+    protected interface LocationPermissionsResultListener {
+        void onRequestLocationPermissionsResult(boolean locationPermissionsWereGranted);
+    }
+
+    protected boolean hasLocationPermissions() {
+        return(ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
+    }
+
+    @OnClick(R.id.retrieve_routes)
+    protected void retrieveRoutes() {
+        mRouteNameTextView.setVisibility(View.GONE);
+        acquireCurrentLocationAndRetrieveRoutesToDestinations(mDestinationCoordinates);
+    }
+
+    @OnClick(R.id.clear_routes)
+    protected void clearRoutes() {
+        mRetrieveRoutesButton.setVisibility(View.VISIBLE);
+        mStartButton.setVisibility(View.GONE);
+        mRouteNameTextView.setVisibility(View.GONE);
+
+        enableButton(mRetrieveRoutesButton, false);
+        enableButton(mClearRoutesButton, false);
+
+        clearMappedRoutes();
+        for (Marker marker : new ArrayList<>(mDestinationMarkers)) {
+            removeDestinationMarker(marker);
         }
-        return true;
+        mDestinationCoordinates.clear();
     }
 
     private void enableButton(Button button, boolean enable) {
@@ -235,19 +323,59 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
                 getResources().getColor(R.color.disabled_grey));
     }
 
+    private void addDestinationToRoute(Coordinate destinationCoordinate) {
+        mDestinationMarkers.add(markDestination(destinationCoordinate, R.color.marker_blue));
+
+        LatLngBounds.Builder latLngBoundsBuilder = new LatLngBounds.Builder();
+        latLngBoundsBuilder.include(mOriginMarker.getPosition());
+
+        for (Marker marker: mDestinationMarkers) {
+            latLngBoundsBuilder.include(marker.getPosition());
+        }
+
+        mMapController.moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBoundsBuilder.build(),
+                100,
+                (int) getMapExtentPaddingTop(),
+                100,
+                (int) getMapExtentPaddingBottom()));
+
+        mStartButton.setVisibility(View.GONE);
+        mRetrieveRoutesButton.setVisibility(View.VISIBLE);
+        mRouteNameTextView.setVisibility(View.GONE);
+        mSelectedRoute = null;
+
+        mDestinationCoordinates.add(destinationCoordinate);
+
+        enableButton(mRetrieveRoutesButton, true);
+        enableButton(mClearRoutesButton, true);
+    }
+
+    // Lazy load map top padding
+    private float getMapExtentPaddingTop() {
+        if (mMapExtentPaddingTop == null) {
+            int searchBarViewHeightWithPadding = 85; // Based off search bar view height, padding, & marker height
+            mMapExtentPaddingTop = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                    searchBarViewHeightWithPadding, getResources().getDisplayMetrics());
+        }
+        return mMapExtentPaddingTop;
+    }
+
+    // Lazy load map bottom padding
+    private float getMapExtentPaddingBottom() {
+        if (mMapExtentPaddingBottom == null) {
+            int routeButtons = 50; // Based off route buttons at bottom of map's height & padding
+            mMapExtentPaddingBottom = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                    routeButtons, getResources().getDisplayMetrics());
+        }
+        return mMapExtentPaddingBottom;
+    }
+
     @Override
     protected void onStart() {
         Log.d(TAG, "onStart()");
         super.onStart();
 
-        mMap.onStart();
-
-        clearMappedRoutes();
-        removeDestinationMarker();
-
-        mStartButton.setVisibility(View.GONE);
-        mSearchButton.setVisibility(View.VISIBLE);
-        mRouteNameTextView.setText("");
+        // mMap.onStart();
     }
 
     @Override
@@ -289,93 +417,103 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     @OnClick(R.id.start)
     protected void startNavigationActivity() {
         mStartButton.setVisibility(View.GONE);
-        mSearchButton.setVisibility(View.VISIBLE);
         mRouteNameTextView.setVisibility(View.GONE);
 
         NavigationActivity.start(this, mSelectedRoute);
     }
 
-    @OnClick(R.id.search)
-    protected void showSearchAheadFragment() {
-        com.mapquest.android.commoncore.model.LatLng mapCenter = MapUtils.toMapQuestLatLng(mMapController.getCameraPosition().target);
-        SearchAheadFragment fragment = SearchAheadFragment.newInstance(mapCenter);
-        getSupportFragmentManager().beginTransaction().add(android.R.id.content, fragment, SEARCH_AHEAD_FRAGMENT_TAG)
-                .addToBackStack(null).commit();
-        mSearchAheadFragment = fragment;
-    }
+//    @OnClick(R.id.search)
+//    protected void showSearchAheadFragment() {
+//        com.mapquest.android.commoncore.model.LatLng mapCenter = MapUtils.toMapQuestLatLng(mMapController.getCameraPosition().target);
+//        SearchAheadFragment fragment = SearchAheadFragment.newInstance(mapCenter);
+//        getSupportFragmentManager().beginTransaction().add(android.R.id.content, fragment, SEARCH_AHEAD_FRAGMENT_TAG)
+//                .addToBackStack(null).commit();
+//        mSearchAheadFragment = fragment;
+//    }
 
-    private void acquireAndZoomToLocation(final MapboxMap mapController) {
-        LocationUtil.acquireLocation(this, mApp.getLocationProviderAdapter(), new LocationProviderAdapter.LocationAcquisitionListener() {
-            @Override
-            public void onLocationAcquired(Location acquiredLocation) {
-                markOrigin(acquiredLocation);
-
-                mapController.moveCamera(CameraUpdateFactory.newLatLngZoom(toLatLng(acquiredLocation), DEFAULT_ZOOM_LEVEL));
-                mapController.setOnMapLongClickListener(new OnMapLongClickListener() {
+    private void acquireCurrentLocationAndZoom(final MapboxMap mapController) {
+        LocationProviderAdapter locationProviderAdapter = mApp.getLocationProviderAdapter();
+        LocationUtil.acquireLocation(this, locationProviderAdapter,
+                new LocationProviderAdapter.LocationAcquisitionListener() {
                     @Override
-                    public void onMapLongClick(@NonNull LatLng clickedLocation) {
-                        markDestination(toCoordinate(clickedLocation));
-
-                        mStartButton.setVisibility(View.GONE);
-                        mRouteNameTextView.setVisibility(View.GONE);
-                        mSelectedRoute = null;
-
-                        retrieveRouteOptionsToLocation(clickedLocation);
+                    public void onLocationAcquired(final Location acquiredLocation) {
+                        mStartingCoordinate = acquiredLocation;
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                mapController.moveCamera(
+                                        CameraUpdateFactory.newLatLngZoom(toLatLng(acquiredLocation), DEFAULT_ZOOM_LEVEL));
+                                mapController.setOnMapLongClickListener(mMapLongClickListener);
+                                markOrigin(acquiredLocation);
+                            }
+                        }, 100);
                     }
                 });
-            }
-        });
     }
 
-    private void retrieveRouteOptionsToLocation(final LatLng location) {
-        LocationUtil.acquireLocation(this, mApp.getLocationProviderAdapter(), new LocationProviderAdapter.LocationAcquisitionListener() {
+    private void acquireCurrentLocationAndRetrieveRoutesToDestinations(final List<Coordinate> destinationLocations) {
+        LocationProviderAdapter locationProviderAdapter = mApp.getLocationProviderAdapter();
+        LocationUtil.acquireLocation(this, locationProviderAdapter,
+                new LocationProviderAdapter.LocationAcquisitionListener() {
+                    @Override
+                    public void onLocationAcquired(Location acquiredLocation) {
+                        mStartingCoordinate = acquiredLocation;
+                        retrieveRouteFromStartingLocationToDestinations(acquiredLocation, destinationLocations);
+                    }
+                });
+    }
+
+    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingLocation, final List<Coordinate> destinationLocations) {
+        RoutesResponseListener responseListener = new RoutesResponseListener() {
             @Override
-            public void onLocationAcquired(Location acquiredLocation) {
-
-                RoutesResponseListener responseListener = new RoutesResponseListener() {
-                    ProgressDialog mRoutingDialog;
-
-                    @Override
-                    public void onRequestMade() {
-                        mRoutingDialog = displayProgressDialog("Routing", "Getting routes.");
-                    }
-
-                    @Override
-                    public void onRoutesRetrieved(List<Route> routes) {
-                        mRoutingDialog.dismiss();
-                        toast(RouteSelectionActivity.this, routes.size() + " routes returned.");
-
-                        mapRoutes(routes, null);
-                        LatLng startLatLng = new LatLng(routes.get(0).getStartLocation().getLatitude(), routes.get(0).getStartLocation().getLongitude());
-                        List<LatLng> latLngList = new ArrayList<LatLng>();
-                        latLngList.add(startLatLng);
-                        latLngList.add(location);
-                        LatLngBounds latLngBounds = new LatLngBounds.Builder().include(latLngList).build();
-                        mMapController.moveCamera(CameraUpdateFactory.newLatLngBounds(latLngBounds, 100, 2, 100, 2));
-                    }
-
-                    @Override
-                    public void onRequestFailed(@Nullable Integer httpStatusCode, @Nullable IOException exception) {
-                        mRoutingDialog.dismiss();
-
-                        displayInformationalDialog("Error", "Sorry, couldn't get routes. :(\n\nCode: " + httpStatusCode
-                                + "\nException: " + exception);
-                    }
-                };
-
-                RouteOptions routeOptions = new RouteOptions.Builder()
-                        .systemOfMeasurementForDisplayText(SystemOfMeasurement.UNITED_STATES_CUSTOMARY)
-                        .build();
-
-                mRouteService.requestRoutes(acquiredLocation, Collections.singletonList(toCoordinate(location)),
-                        routeOptions, responseListener);
+            public void onRequestMade() {
+                mRoutingDialog = displayProgressDialog("Routing", "Getting routes...");
             }
-        });
+
+            @Override
+            public void onRoutesRetrieved(@NonNull final List<Route> routes) {
+                if(mRoutingDialog != null) {
+                    mRoutingDialog.dismiss();
+                }
+                if(!BuildConfig.FLAVOR.equals("mock")) {
+                    toast(RouteSelectionActivity.this, routes.size() + " routes returned.");
+                }
+                mapRoutes(routes, null);
+
+// FIXME: when using setSelectedRoute(), below
+//                if(routes.size() == 1) {
+//                    // if only one route returned, auto-select it
+//                    setSelectedRoute(routes.get(0));
+//                }
+            }
+
+            @Override
+            public void onRequestFailed(@Nullable Integer httpStatusCode,
+                                        @Nullable IOException exception) {
+                Log.d(TAG, "RoutesResponseListener.onRequestFailed: statusCode: " + httpStatusCode + "; exception: " + exception);
+
+                mRoutingDialog.dismiss();
+                displayInformationalDialog("Error",
+                        "Sorry, couldn't get routes. :(\n\nCode: " + httpStatusCode
+                                + "\nException: " + exception);
+            }
+        };
+
+        mRouteService = NavigationRouteServiceFactory.getNavigationRouteService(getApplicationContext(), BuildConfig.API_KEY);
+        RouteOptions routeOptions = new RouteOptions.Builder()
+                .systemOfMeasurementForDisplayText(SystemOfMeasurement.UNITED_STATES_CUSTOMARY) // or specify METRIC
+                .language("es_US") // NOTE: alternately, specify "es_US" for Spanish in the US
+                .build();
+
+        try {
+            mRouteService.requestRoutes(startingLocation, destinationLocations, routeOptions, responseListener);
+        } catch (IllegalArgumentException e) {
+            toast(RouteSelectionActivity.this, e.getLocalizedMessage());
+        }
     }
 
     private void mapRoutes(Iterable<Route> routes, Route selectedRoute) {
         clearMappedRoutes();
-
         for (Route route : routes) {
             Set<Polyline> routeSegmentPolylines = route.equals(selectedRoute) ?
                     mapRoute(route, SELECTED_ROUTE_WIDTH, SELECTED_ROUTE_OPACITY) :
@@ -385,18 +523,16 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         }
     }
 
-    private Set<Polyline> mapRoute(Route route, float lineWidth, float lineOpactity) {
+    private Set<Polyline> mapRoute(Route route, float lineWidth, float lineOpacity) {
 
         Set<Polyline> polylines = new HashSet<>();
-
         for (RouteLeg routeLeg: route.getLegs()) {
-            polylines.addAll(mapLeg(routeLeg, lineWidth, lineOpactity));
+            polylines.addAll(mapLeg(routeLeg, lineWidth, lineOpacity));
         }
-
         return polylines;
     }
 
-    private Set<Polyline> mapLeg(RouteLeg leg, float lineWidth, float lineOpactity) {
+    private Set<Polyline> mapLeg(RouteLeg leg, float lineWidth, float lineOpacity) {
 
         List<SpanPathPair<CongestionSpan>> segments = new ShapeSegmenter.Builder().build()
                 .segmentPath(leg.getShape(), leg.getTraffic().getConditions());
@@ -405,10 +541,9 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         for (SpanPathPair<CongestionSpan> segment : segments) {
             polylines.add(mMapController.addPolyline(buildSegmentPolylineOptions(
                     segment.getShapeCoordinates(),
-                    setOpacity(getCongestionColor(segment.getSpan()), lineOpactity),
+                    setOpacity(getCongestionColor(segment.getSpan()), lineOpacity),
                     lineWidth)));
         }
-
         return polylines;
     }
 
@@ -420,7 +555,6 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         for (Coordinate coordinate : path) {
             options.add(toLatLng(coordinate));
         }
-
         return options;
     }
 
@@ -436,12 +570,10 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
 
     private ProgressDialog displayProgressDialog(String title, String message) {
         ProgressDialog dialog = new ProgressDialog(this);
-
         dialog.setTitle(title);
         dialog.setMessage(message);
         dialog.setCancelable(false);
         dialog.show();
-
         return dialog;
     }
 
@@ -462,15 +594,12 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
             if (mOriginMarker != null) {
                 mMapController.removeMarker(mOriginMarker);
             }
-
-            mOriginMarker = markLocation(toLatLng(location), R.color.marker_greeen);
+            mOriginMarker = markLocation(toLatLng(location), R.color.marker_green);
         }
     }
 
-    private void markDestination(Coordinate location) {
-        removeDestinationMarker();
-
-        mDestinationMarker = markLocation(toLatLng(location), R.color.marker_red);
+    private Marker markDestination(Coordinate location, int color) {
+        return(markLocation(toLatLng(location), color));
     }
 
     private Marker markLocation(LatLng latLng, @ColorRes int fillColorResourceId) {
@@ -478,10 +607,10 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
                 .position(latLng));
     }
 
-    private void removeDestinationMarker() {
-        if(mDestinationMarker != null) {
-            mMapController.removeMarker(mDestinationMarker);
-            mDestinationMarker = null;
+    private void removeDestinationMarker(Marker marker) {
+        if (marker != null) {
+            mMapController.removeMarker(marker);
+            mDestinationMarkers.remove(marker);
         }
     }
 
@@ -511,6 +640,11 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     private class RouteClickListener implements OnMapClickListener {
         @Override
         public void onMapClick(@NonNull LatLng latLng) {
+
+// FIXME: when using setSelectedRoute(), below
+//            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+//            setSelectedRoute(findNearestRoute(drawnRoutes, toCoordinate(latLng)));
+
             List<Route> routes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
             clearMappedRoutes();
 
@@ -522,13 +656,31 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
 
                     mapRoutes(routes, mSelectedRoute);
                 }
-
                 mStartButton.setVisibility(View.VISIBLE);
-                mSearchButton.setVisibility(View.GONE);
 
                 mRouteNameTextView.setVisibility(View.VISIBLE);
                 mRouteNameTextView.setText(mSelectedRoute.getName() != null ? mSelectedRoute.getName() : "");
             }
+        }
+    }
+
+    private void setSelectedRoute(Route selectedRoute) {
+        if(selectedRoute != null) {
+            mSelectedRoute = selectedRoute;
+
+            // re-draw routes; highlighting the selected-route
+            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+            clearMappedRoutes();
+
+            // note: move selected-route to the end, so that it gets drawn on top of the rest
+            if(drawnRoutes.remove(selectedRoute)) {
+                drawnRoutes.add(selectedRoute);
+                mapRoutes(drawnRoutes, selectedRoute);
+            }
+            mStartButton.setVisibility(View.VISIBLE);
+
+            mRouteNameTextView.setVisibility(View.VISIBLE);
+            mRouteNameTextView.setText(mSelectedRoute.getName() != null ? mSelectedRoute.getName() : "");
         }
     }
 
@@ -537,11 +689,8 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         Route nearestRoute = null;
 
         ShapeSegmenter shapeSegmenter = new ShapeSegmenter.Builder().build();
-
         for (Route route : routes) {
-
             LineStringPoint result = null;
-
             for (RouteLeg routeLeg: route.getLegs()) {
                 LineStringPoint pointForLeg = ((ShapeCalculator) shapeSegmenter)
                         .findClosestPoint(point, routeLeg.getShape().getCoordinates());
@@ -549,17 +698,14 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
                     result = pointForLeg;
                 }
             }
-
             if (nearestDistance == null || result.getArcLengthFromTestPoint() < nearestDistance) {
                 nearestDistance = result.getArcLengthFromTestPoint();
                 nearestRoute = route;
             }
         }
-
         return nearestRoute;
     }
 
-    /** Make gps button visible and set up long click listener */
     private void initGpsButton() {
         mGpsCenterOnUserLocationButton.setVisibility(View.VISIBLE);
         mGpsCenterOnUserLocationButton.setOnClickListener(new View.OnClickListener() {
@@ -567,7 +713,19 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
             public void onClick(View v) {
                 if (hasLocationPermissions()) {
                     // re-acquire current location and zoom/center map to that location
-                    acquireAndZoomToLocation(mMapController);
+                    acquireCurrentLocationAndZoom(mMapController);
+                } else {
+                    requestLocationPermissions(new LocationPermissionsResultListener() {
+                        @Override
+                        public void onRequestLocationPermissionsResult(boolean locationPermissionsWereGranted) {
+                            if (locationPermissionsWereGranted) {
+                                acquireCurrentLocationAndZoom(mMapController);
+                            } else {
+                                // location-permissions were *denied* by the user...
+                                // so nothing to do (until the user taps the "GPS center" button again)
+                            }
+                        }
+                    });
                 }
             }
         });

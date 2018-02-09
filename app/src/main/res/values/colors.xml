@@ -7,7 +7,7 @@
     <color name="maneuverApproachBarBackground">#666666</color>
     <color name="speed_sign_border_color">#000000</color>
 
-    <color name="marker_greeen">#6BBD31</color>
+    <color name="marker_green">#6BBD31</color>
     <color name="marker_yellow">#FFDF37</color>
     <color name="marker_orange">#ED9E00</color>
     <color name="marker_red">#FF3737</color>

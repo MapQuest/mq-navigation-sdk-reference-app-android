@@ -1,15 +1,5 @@
 package com.mapquest.navigation.sampleapp.activity;
 
-import static com.mapquest.navigation.internal.collection.CollectionsUtil.firstValue;
-import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColor;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.buildCircleMarkerOptions;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.buildUpArrowMarkerOptions;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
-import static com.mapquest.navigation.internal.collection.CollectionsUtil.lastValue;
-import static com.mapquest.navigation.internal.logging.AccumulatingLogger.buildLegDescriptions;
-import static com.mapquest.navigation.model.RouteStoppedReason.ROUTE_COMPLETED;
-
 import android.app.ProgressDialog;
 import android.arch.lifecycle.LifecycleRegistry;
 import android.arch.lifecycle.LifecycleRegistryOwner;
@@ -35,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.Polyline;
@@ -50,17 +41,8 @@ import com.mapquest.navigation.ShapeSegmenter;
 import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.listener.RouteResponseListener;
 import com.mapquest.navigation.dataclient.listener.TrafficResponseListener;
-import com.mapquest.navigation.location.LocationProviderAdapter;
-import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
-import com.mapquest.navigation.sampleapp.R;
-import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
-import com.mapquest.navigation.sampleapp.util.DrawableMappingUtil;
-import com.mapquest.navigation.sampleapp.util.LocationUtil;
-import com.mapquest.navigation.sampleapp.view.DirectionsListAdapter;
-import com.mapquest.navigation.sampleapp.view.LaneGuidanceBar;
-import com.mapquest.navigation.sampleapp.view.ManeuverApproachBar;
-import com.mapquest.navigation.sampleapp.view.NarrativeAdapter;
 import com.mapquest.navigation.internal.NavigationManagerImpl;
+import com.mapquest.navigation.internal.collection.CollectionsUtil;
 import com.mapquest.navigation.internal.logging.AccumulatingLogger;
 import com.mapquest.navigation.internal.unit.Duration;
 import com.mapquest.navigation.internal.unit.Speed;
@@ -71,11 +53,11 @@ import com.mapquest.navigation.listener.NavigationLifecycleEventListener;
 import com.mapquest.navigation.listener.NavigationProgressListener;
 import com.mapquest.navigation.listener.NavigationStartStopListener;
 import com.mapquest.navigation.listener.SpeedLimitSpanListener;
+import com.mapquest.navigation.location.LocationProviderAdapter;
 import com.mapquest.navigation.model.CongestionSpan;
 import com.mapquest.navigation.model.EstimatedTimeOfArrival;
 import com.mapquest.navigation.model.Instruction;
 import com.mapquest.navigation.model.Maneuver;
-import com.mapquest.navigation.model.Prompt;
 import com.mapquest.navigation.model.Route;
 import com.mapquest.navigation.model.RouteLeg;
 import com.mapquest.navigation.model.RouteStoppedReason;
@@ -86,6 +68,15 @@ import com.mapquest.navigation.model.Traffic;
 import com.mapquest.navigation.model.location.Coordinate;
 import com.mapquest.navigation.model.location.Location;
 import com.mapquest.navigation.model.location.LocationObservation;
+import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
+import com.mapquest.navigation.sampleapp.R;
+import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
+import com.mapquest.navigation.sampleapp.util.DrawableMappingUtil;
+import com.mapquest.navigation.sampleapp.util.LocationUtil;
+import com.mapquest.navigation.sampleapp.view.DirectionsListAdapter;
+import com.mapquest.navigation.sampleapp.view.LaneGuidanceBar;
+import com.mapquest.navigation.sampleapp.view.ManeuverApproachBar;
+import com.mapquest.navigation.sampleapp.view.NarrativeAdapter;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -99,6 +90,14 @@ import java.util.Set;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+
+import static com.mapquest.navigation.internal.collection.CollectionsUtil.lastValue;
+import static com.mapquest.navigation.internal.logging.AccumulatingLogger.buildLegDescriptions;
+import static com.mapquest.navigation.model.RouteStoppedReason.ROUTE_COMPLETED;
+import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColor;
+import static com.mapquest.navigation.sampleapp.util.UiUtil.buildCircleMarkerOptions;
+import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
+import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class NavigationActivity extends AppCompatActivity implements LifecycleRegistryOwner {
 
@@ -155,10 +154,14 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     protected TextView mNextManeuverLabel;
     @BindView(R.id.next_maneuver_icon)
     protected ImageView mNextManeuverIcon;
+    @BindView(R.id.pause_resume_icon)
+    protected ImageView mPauseResumeIcon;
     @BindView(R.id.next_maneuver_distance)
     protected TextView mNextManeuverDistanceLabel;
-    @BindView(R.id.time_of_arrival)
-    protected TextView mTimeOfArrivalLabel;
+    @BindView(R.id.eta_next_destination)
+    protected TextView mEtaNextDestinationLabel;
+    @BindView(R.id.eta_final_destination)
+    protected TextView mEtaFinalDestinationLabel;
     @BindView(R.id.remaining_distance)
     protected TextView mRemainingDistanceLabel;
 
@@ -185,6 +188,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     protected TextView mSchoolZoneMaxSpeedLimitLabel;
     @BindView(R.id.maneuver_lanes)
     LaneGuidanceBar mLaneGuidanceBar;
+    @BindView(R.id.skipLegIcon)
+    protected ImageView mSkipLegImageView;
 
     @OnClick(R.id.directions_list_toggle_button_text_view)
     protected void toggleDirectionsList() {
@@ -272,6 +277,35 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 mServiceConnection = initializeNavigationService();
             }
         });
+
+        mPauseResumeIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mNavigationManager != null) {
+                    if (!mNavigationManager.isPaused()) {
+                        mNavigationManager.pauseNavigation();
+                        mPauseResumeIcon.setImageResource(R.drawable.ic_play);
+                        final AlertDialog alertDialog = new AlertDialog.Builder(NavigationActivity.this)
+                                .setTitle("Navigation Paused")
+                                .setMessage("Navigation has been PAUSED. Click OK to resume navigation...")
+                                .setNeutralButton(R.string.ok, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                        mNavigationManager.resumeNavigation();
+                                        mPauseResumeIcon.setImageResource(R.drawable.ic_pause);
+                                    }
+                                })
+                                .create();
+                        alertDialog.show();
+                    } else {
+                        mNavigationManager.resumeNavigation();
+                        mPauseResumeIcon.setImageResource(R.drawable.ic_pause);
+                        Toast.makeText(getApplicationContext(), "Navigation resumed", Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        });
     }
 
     public void setDirectionsList(List<Instruction> instructions) {
@@ -339,6 +373,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         };
 
         mServiceIntent = new Intent(this, NavigationNotificationService.class);
+        if (mRoute != null) {
+            mServiceIntent.putExtra(NavigationNotificationService.NAVIGATION_LANGUAGE_CODE_KEY, mRoute.getRouteOptions().getLanguage());
+        }
         startService(mServiceIntent); // note: we both start *and* bind to svc to keep it running even if activity is killed
         bindService(mServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
@@ -479,11 +516,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         if(mMapController == null) {
             return;
         }
-
         List<SpanPathPair<CongestionSpan>> segments = new ShapeSegmenter.Builder().build().segmentPath(routeLeg.getShape(), trafficConditions);
         for(SpanPathPair<CongestionSpan> segment : segments) {
             int color = getCongestionColor(segment.getSpan());
-
             mRoutePolylines.add(mapPathSegment(segment.getShapeCoordinates(), color, PATH_WIDTH));
         }
     }
@@ -519,7 +554,6 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             @Override
             public void onMapReady(final MapboxMap mapController) {
                 mMapController = mapController;
-
                 map.setOnTouchListener(new FollowModeExitingMapTouchListener());
             }
         });
@@ -589,14 +623,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             mInitialRoute = route;
             return;
         }
-
-        // Map segments with traffic-based colors
+        // map segments with traffic-based colors
         for (RouteLeg leg: route.getLegs()) {
-
-            // Draw leg destinations
+            // draw leg destinations
             mRouteEndMarker = mMapController.addMarker(buildDownArrowMarkerOptions(this, R.color.marker_red)
                     .position(toLatLng(lastValue(leg.getShape().getCoordinates()))));
-
             mapPath(leg, leg.getTraffic().getConditions());
         }
     }
@@ -651,14 +682,6 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void displayExitDialog(String title, String message) {
-        new AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage(message)
-                .setPositiveButton("Okey Dokey", new FinishingDialogOnClickListener())
-                .show();
-    }
-
     private void displayProgressDialog(String title, String message) {
         dismissProgressDialog();
 
@@ -682,40 +705,33 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             mNextManeuverIcon.setImageResource(MANEUVER_DRAWABLE_IDS_BY_TYPE.get(maneuver.getType()));
             mNextManeuverIcon.setVisibility(View.VISIBLE);
         }
-
     }
 
     private void updateNextManeuverLabel(Maneuver maneuver) {
         if(maneuver == null) {
             mNextManeuverLabel.setText("");
         } else {
-            String labelText = maneuver.getName() != null && !maneuver.getName().trim().isEmpty() ?
-                    getManeuverTypeDisplayString(maneuver.getType()) + ", " + maneuver.getName():
-                    getManeuverTypeDisplayString(maneuver.getType());
+            String labelText = !maneuver.getName().trim().isEmpty() ?
+                    maneuver.getTypeText().toLowerCase() + ", " + maneuver.getName() :
+                    maneuver.getTypeText().toLowerCase();
             mNextManeuverLabel.setText(labelText);
         }
     }
 
-    private String getManeuverTypeDisplayString(Maneuver.Type type) {
-        String displayString = type.toString();
-
-        return displayString.charAt(0) + displayString.substring(1).replace('_', ' ').toLowerCase();
+    private void updateNextManeuverDistanceLabel(Double distance, SystemOfMeasurement systemOfMeasurement, String languageCode) {
+        String maneuverDistance = maneuverDistanceString(distance, systemOfMeasurement, (languageCode != null) ? languageCode : "en_US");
+        mNextManeuverDistanceLabel.setText(maneuverDistance);
     }
-
-    private void updateNextManeuverDistanceLabel(Double distance, SystemOfMeasurement systemOfMeasurement) {
-        String manueverDistance = maneuverDistanceString(distance, systemOfMeasurement);
-        mNextManeuverDistanceLabel.setText(manueverDistance);
-    }
-
-    private String maneuverDistanceString(Double distance, SystemOfMeasurement systemOfMeasurement) {
+    private String maneuverDistanceString(Double distance, SystemOfMeasurement systemOfMeasurement, String languageCode) {
         if (distance == null) {
             return "";
         }
-
-        if (systemOfMeasurement == SystemOfMeasurement.METRIC) {
-            return getResources().getString(R.string.maneuver_distance_metric, distance.intValue());
+        if (systemOfMeasurement.equals(SystemOfMeasurement.METRIC)) {
+            return getResources().getString(languageCode.equals("en_US") ?
+                    R.string.maneuver_distance_metric : R.string.maneuver_distance_metric_es, distance.intValue());
         } else {
-            return getResources().getString(R.string.maneuver_distance_imperial, distance / METERS_PER_MILE);
+            return getResources().getString(languageCode.equals("en_US") ?
+                    R.string.maneuver_distance_imperial : R.string.maneuver_distance_imperial_es, distance / METERS_PER_MILE);
         }
     }
 
@@ -771,26 +787,46 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     }
 
     private void updateRouteUi(Route route) {
-        mapRoute(route);
+        if ((route != null)) {
+            mapRoute(route);
+            for (RouteLeg routeLeg : route.getLegs()) {
+                Log.d(TAG, "updateRouteUi() ETA for route leg " + routeLeg.getId() + " : " +
+                        formatTimestampForLocalTimezone(routeLeg.getTraffic().getEstimatedTimeOfArrival().getTime()));
+            }
+            try {
+                Traffic lastRouteLegTraffic = route.getLegs().get(CollectionsUtil.lastIndex(route.getLegs())).getTraffic();
+                mEtaFinalDestinationLabel.setText(
+                        formatTimestampForLocalTimezone(lastRouteLegTraffic.getEstimatedTimeOfArrival().getTime()));
+            } catch (IndexOutOfBoundsException e) {
+                Log.e(TAG, "updateRouteUi() failed to get ETA for last route leg");
+            }
+        }
 
-        RouteLeg routeLeg = mNavigationManager.getCurrentRouteLeg();
-        if (routeLeg != null) {
-            Traffic traffic = routeLeg.getTraffic();
-            mTimeOfArrivalLabel.setText(
-                    formatTimestampForLocalTimezone(traffic.getEstimatedTimeOfArrival().getTime()));
+        RouteLeg currentRouteLeg = mNavigationManager.getCurrentRouteLeg();
+        if (currentRouteLeg != null) {
+            Traffic currentRouteLegTraffic = currentRouteLeg.getTraffic();
+            mEtaNextDestinationLabel.setText(
+                    formatTimestampForLocalTimezone(currentRouteLegTraffic.getEstimatedTimeOfArrival().getTime()));
+        } else {
+            Log.e(TAG, "updateRouteUi() failed to get ETA for current route leg");
         }
 
         resetUi();
     }
 
-    private class FinishingDialogOnClickListener implements OnClickListener {
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-            finish();
-        }
+    private void showSkipLegButtonIfNotOnFinalLeg() {
+        Route currentRoute = mNavigationManager.getRoute();
+        int currentLegIndex = currentRoute.getLegs().indexOf(mNavigationManager.getCurrentRouteLeg());
+
+        // Allow users to skip if not on last leg of route
+        showSkipLegButton(currentLegIndex < (currentRoute.getLegs().size() - 1));
     }
 
-    private class DismissingDialogOnClickListener implements OnClickListener {
+    private void showSkipLegButton(boolean enabled) {
+        mSkipLegImageView.setImageResource(enabled ? R.drawable.ic_skip_next_black_24dp : R.drawable.ic_skip_next_gray_24dp);
+    }
+
+    private class DismissDialogOnClickListener implements OnClickListener {
         @Override
         public void onClick(DialogInterface dialog, int which) {
             dialog.dismiss();
@@ -884,18 +920,17 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     private class UiUpdatingRouteResponseListener implements RouteResponseListener {
         @Override
         public void onRequestMade() {
-            displayProgressDialog("Off Route", "Requesting updated route...");
+            Toast.makeText(getApplicationContext(), "Off Route. Requesting updated route...", Toast.LENGTH_LONG).show();
         }
 
         @Override
         public void onRouteRetrieved(Route route) {
-            dismissProgressDialog();
             updateRouteUi(route);
+            updateDirectionsList();
         }
 
         @Override
         public void onRequestFailed(@Nullable Integer httpStatusCode, @Nullable IOException exception) {
-            dismissProgressDialog();
             toast(NavigationActivity.this, "Route request failed.");
         }
     }
@@ -907,8 +942,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             mLastLocationObservation = locationObservation;
             updateUserLocationMarker(locationObservation.getRawGpsLocation());
             updateClosestRoutePoint(locationObservation.getSnappedLocation());
-            updateNextManeuverDistanceLabel(locationObservation.getDistanceToUpcomingManeuver(),
-                    mRoute.getRouteOptions().getSystemOfMeasurementForDisplayText());
+            updateNextManeuverDistanceLabel(
+                    locationObservation.getDistanceToUpcomingManeuver(),
+                    mRoute.getRouteOptions().getSystemOfMeasurementForDisplayText(),
+                    mRoute.getRouteOptions().getLanguage()
+            );
 
             Double distanceToUpcomingManeuver = locationObservation.getDistanceToUpcomingManeuver();
             if (distanceToUpcomingManeuver != null) {
@@ -925,18 +963,54 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             updateNextManeuverIcon(upcomingManeuver);
             updateNextManeuverLabel(upcomingManeuver);
 
-
             mLeftManeuverApproachBar.update(upcomingManeuver);
             mRightManeuverApproachBar.update(upcomingManeuver);
             mLaneGuidanceBar.setLanes(upcomingManeuver);
         }
 
         @Override
-        public void onDestinationReached(@NonNull Coordinate destination, @Nullable Coordinate nextDestination) {
-            clearMarkup();
+        public void onDestinationReached(boolean isFinalDestination, @NonNull RouteLeg routeLegCompleted, @NonNull final DestinationAcceptanceHandler destinationAcceptanceHandler) {
+            if (!isFinalDestination) {
 
-            displayExitDialog("Done Navigating",
-                    nextDestination == null ? "Final destination reached" : "Destination reached");
+                final AlertDialog alertDialog = new AlertDialog.Builder(NavigationActivity.this)
+                        .setTitle("Arrived at Waypoint")
+                        .setMessage("Intermediate destination reached. Press 'Proceed' to proceed to the next stop...")
+                        .setPositiveButton("Proceed", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                destinationAcceptanceHandler.confirmArrival(true);
+                                updateDirectionsList();
+                                showSkipLegButtonIfNotOnFinalLeg();
+                            }
+                        })
+                        .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                            @Override
+                            public void onCancel(DialogInterface dialog) {
+                                destinationAcceptanceHandler.confirmArrival(false);
+                            }
+                        })
+                        .show();
+
+            } else {
+                clearMarkup();
+
+                final AlertDialog alertDialog = new AlertDialog.Builder(NavigationActivity.this)
+                        .setTitle("Done Navigating")
+                        .setMessage("Final destination reached")
+                        .setPositiveButton("OK", new OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                destinationAcceptanceHandler.confirmArrival(true);
+                                finish(); // OK, done with NavigationActivity...
+                            }
+                        }).setOnCancelListener(new DialogInterface.OnCancelListener() {
+                            @Override
+                            public void onCancel(DialogInterface dialog) {
+                                destinationAcceptanceHandler.confirmArrival(false);
+                            }
+                        })
+                        .show();
+            }
         }
 
         @Override
@@ -947,7 +1021,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         @Override
         public void onRequestMade() {
             toast(NavigationActivity.this, "Traffic update request made");
-            mTimeOfArrivalLabel.setAlpha(0.5f);
+            mEtaNextDestinationLabel.setAlpha(0.5f);
+            mEtaFinalDestinationLabel.setAlpha(0.5f);
         }
 
         @Override
@@ -955,20 +1030,16 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             toast(NavigationActivity.this, "Traffic updated");
 
             RouteLeg routeLeg = mNavigationManager.getCurrentRouteLeg();
-
             if (routeLeg == null) {
                 Log.e(TAG, "Current route leg is null. Cannot update traffic.");
                 return;
             }
 
             Traffic update = trafficUpdatesByLegId.get(routeLeg.getId());
-
             try{
-                if(update == null) {
-                    AccumulatingLogger.INSTANCE.addItemAndLog(
-                            buildMessageForMissingTrafficUpdate(routeLeg.getId(), trafficUpdatesByLegId.keySet()));
-                } else {
-                    mapPath(routeLeg, update.getConditions()); // Add null check on update since it's still possible to get a response for a routeLeg that's no longer in effect.
+                // note: null-check on update is needed since it's still possible to get a response for a routeLeg that's no longer in effect
+                if(update != null) {
+                    mapPath(routeLeg, update.getConditions());
                 }
             } catch(IndexOutOfBoundsException exception) {
                 AccumulatingLogger.INSTANCE.addItemAndLog(
@@ -1007,13 +1078,13 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 .setTitle("Why so slow?")
                 .setMessage(String.format(Locale.US, "There's a faster route that will save you %1.1f minutes. Take it?", minutes))
                 .setPositiveButton("Of course!", listener)
-                .setNegativeButton("Nah, I'm good.", new DismissingDialogOnClickListener())
+                .setNegativeButton("Nah, I'm good.", new DismissDialogOnClickListener())
                 .show();
     }
 
     private class UiUpdatingSpeedLimitSpanListener implements SpeedLimitSpanListener {
         @Override
-        public void onSpeedLimitBoundariesCrossed(Set<SpeedLimitSpan> exitedSpeedLimits, Set<SpeedLimitSpan> enteredSpeedLimits) {
+        public void onSpeedLimitBoundariesCrossed(@NonNull Set<SpeedLimitSpan> exitedSpeedLimits, @NonNull Set<SpeedLimitSpan> enteredSpeedLimits) {
             for (SpeedLimitSpan speedLimitSpan : exitedSpeedLimits) {
                 getView(speedLimitSpan.getSpeedLimit().getType()).setVisibility(View.GONE);
             }
@@ -1037,12 +1108,27 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     }
 
     private class UiEtaResponseListener implements EtaResponseListener {
+        @Deprecated
         @Override
-        public void onEtaUpdate(@NonNull EstimatedTimeOfArrival estimatedTimeOfArrival) {
-            long timeOfArrivalTimestamp = estimatedTimeOfArrival.getTime();
+        public void onEtaUpdate(@NonNull EstimatedTimeOfArrival estimatedTimeOfArrival) {}
 
-            mTimeOfArrivalLabel.setAlpha(1.0f);
-            mTimeOfArrivalLabel.setText(formatTimestampForLocalTimezone(timeOfArrivalTimestamp));
+        @Override
+        public void onEtaUpdate(@NonNull Map<String, Traffic> trafficUpdatesByLegId, String currentLegId) {
+            Route route = mNavigationManager.getRoute();
+            if (route == null) {
+                Log.e(TAG, "No route pertaining to this ETA update exists.");
+                return;
+            }
+
+            String lastRouteLegKey = Integer.toString(CollectionsUtil.lastIndex(route.getLegs()));
+            long etaForNextDestination = trafficUpdatesByLegId.get(currentLegId).getEstimatedTimeOfArrival().getTime();
+            long etaForFinalDestination = trafficUpdatesByLegId.get(lastRouteLegKey).getEstimatedTimeOfArrival().getTime();
+
+            mEtaNextDestinationLabel.setAlpha(1.0f);
+            mEtaNextDestinationLabel.setText(formatTimestampForLocalTimezone(etaForNextDestination));
+
+            mEtaFinalDestinationLabel.setAlpha(1.0f);
+            mEtaFinalDestinationLabel.setText(formatTimestampForLocalTimezone(etaForFinalDestination));
         }
 
         @Override
@@ -1056,7 +1142,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         @Override
         public boolean onTouch(View view, MotionEvent event) {
             exitFollowMode();
-
+            view.performClick();
             return false;
         }
     }

@@ -1,7 +1,5 @@
 package com.mapquest.navigation.sampleapp.tts;
 
-import static com.mapquest.navigation.internal.collection.CollectionsUtil.asStringMap;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.AudioManager;
@@ -13,13 +11,17 @@ import android.support.annotation.FloatRange;
 import android.util.Log;
 
 import com.mapquest.navigation.sampleapp.tts.audio.AudioFocusLossListener;
-import com.mapquest.navigation.sampleapp.tts.audio.AudioManagerUtil;
 import com.mapquest.navigation.internal.util.ArgumentValidator;
 import com.mapquest.navigation.internal.util.LogUtil;
 import com.mapquest.navigation.internal.util.SystemVersionUtil;
 import com.mapquest.navigation.listener.SpeechListener;
 
 import java.util.HashMap;
+import java.util.Locale;
+
+import static com.mapquest.navigation.sampleapp.tts.audio.AudioManagerUtil.getAudioManager;
+import static com.mapquest.navigation.sampleapp.tts.audio.AudioManagerUtil.wasFocusGranted;
+import static com.mapquest.navigation.internal.collection.CollectionsUtil.asStringMap;
 
 /**
  * Used to speak text. Proxies calls to Android's underlying TTS implementation, handling additional
@@ -60,7 +62,7 @@ public class TextToSpeechManager {
         mPreferredTtsEngineName = preferredTtsEngineName;
     }
 
-    public synchronized void initialize() {
+    public synchronized void initialize(final String languageTag) {
         if(mTextToSpeech != null) {
             Log.w(TAG, "Ignoring request to initialize when already initialized.");
             return;
@@ -74,6 +76,12 @@ public class TextToSpeechManager {
             protected void onInit(int status, TextToSpeech textToSpeech) {
                 if (status == TextToSpeech.SUCCESS) {
                     mTextToSpeech = textToSpeech;
+                    if (getLocaleFromLanguageTag(languageTag) != null) {
+                        Log.w(TAG, "TTS initialization, set language to " + languageTag);
+                        mTextToSpeech.setLanguage(getLocaleFromLanguageTag(languageTag));
+                    } else {
+                        Log.w(TAG, "TTS initialization");
+                    }
                 } else {
                     Log.e(TAG, "TTS initialization failed");
                 }
@@ -90,7 +98,7 @@ public class TextToSpeechManager {
         initializationListener.setTextToSpeech(textToSpeech);
     }
 
-    public void deinitializeImmediately() {
+    void deinitializeImmediately() {
         if(mTextToSpeech == null) {
             Log.w(TAG, "Ignoring request to deinitialize when uninitialized.");
             return;
@@ -101,7 +109,7 @@ public class TextToSpeechManager {
         mTextToSpeech = null;
     }
 
-    public synchronized void speakWithFocus(String text, SpeechListener speechListener) {
+    synchronized void speakWithFocus(String text, SpeechListener speechListener) {
         if(mTextToSpeech == null) {
             Log.i(TAG, "Ignoring request to speak while uninitialized.");
             return;
@@ -140,16 +148,16 @@ public class TextToSpeechManager {
     }
 
     private void requestAudioFocus() {
-        int requestOutcome = AudioManagerUtil.getAudioManager(mContext).requestAudioFocus(
+        int requestOutcome = getAudioManager(mContext).requestAudioFocus(
                 mFocusLossListener,
                 AUDIO_MANAGER_STREAM,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
 
-        mHasFocus = AudioManagerUtil.wasFocusGranted(requestOutcome);
+        mHasFocus = wasFocusGranted(requestOutcome);
     }
 
     private void releaseAudioFocus() {
-        AudioManagerUtil.getAudioManager(mContext).abandonAudioFocus(mFocusLossListener);
+        getAudioManager(mContext).abandonAudioFocus(mFocusLossListener);
         mHasFocus = false;
     }
 
@@ -165,14 +173,14 @@ public class TextToSpeechManager {
         return mVolume;
     }
 
-    public void mute() {
+    private void mute() {
         mMuted = true;
         mSpeechParameters.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 0);
 
         stopTts();
     }
 
-    public void unmute() {
+    private void unmute() {
         mMuted = false;
         mSpeechParameters.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, mVolume);
     }
@@ -210,6 +218,18 @@ public class TextToSpeechManager {
                 stopTts();
             }
         }
+    }
+
+    private Locale getLocaleFromLanguageTag(String languageTag) {
+        if (languageTag != null && !languageTag.isEmpty()) {
+            Locale[] locales = Locale.getAvailableLocales();
+            for (Locale locale : locales) {
+                if (languageTag.equals(locale.toString())) {
+                    return locale;
+                }
+            }
+        }
+        return null;
     }
 
     private class FocusReleasingUtteranceProgressListener extends UtteranceProgressListener {

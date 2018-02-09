@@ -26,6 +26,8 @@
     <string name="sym_close">x</string>
     <string name="maneuver_distance_metric">%1$d meters</string>
     <string name="maneuver_distance_imperial">%1$.2f miles</string>
+    <string name="maneuver_distance_metric_es">%1$d metros</string>
+    <string name="maneuver_distance_imperial_es">%1$.2f millas</string>
 
     <!-- Search Ahead -->
     <string name="enter_location">Enter Location</string>
