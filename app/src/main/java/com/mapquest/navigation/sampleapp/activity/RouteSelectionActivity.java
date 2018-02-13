@@ -46,7 +46,6 @@ import com.mapquest.navigation.location.LocationProviderAdapter;
 import com.mapquest.navigation.model.CongestionSpan;
 import com.mapquest.navigation.model.Route;
 import com.mapquest.navigation.model.RouteLeg;
-import com.mapquest.navigation.model.RouteOptionType;
 import com.mapquest.navigation.model.RouteOptions;
 import com.mapquest.navigation.model.SystemOfMeasurement;
 import com.mapquest.navigation.model.location.Coordinate;
@@ -54,20 +53,14 @@ import com.mapquest.navigation.model.location.Location;
 import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
 import com.mapquest.navigation.sampleapp.R;
-import com.mapquest.navigation.sampleapp.location.MapzenLocationProviderAdapter;
+import com.mapquest.navigation.sampleapp.location.CurrentLocationProvider;
 import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragment;
-import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragmentCallbacks;
-import com.mapquest.navigation.sampleapp.searchahead.SearchAheadResult;
 import com.mapquest.navigation.sampleapp.searchahead.SearchBarView;
-import com.mapquest.navigation.sampleapp.searchahead.util.AddressDisplayUtil;
-import com.mapquest.navigation.sampleapp.searchahead.util.MQFontProviderUtil;
-import com.mapquest.navigation.sampleapp.searchahead.util.MapUtils;
 import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
 import com.mapquest.navigation.sampleapp.util.LocationUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -80,10 +73,12 @@ import butterknife.OnClick;
 
 import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColor;
 import static com.mapquest.navigation.sampleapp.util.ColorUtil.setOpacity;
+import static com.mapquest.navigation.sampleapp.util.MapUtils.toMapQuestLatLng;
 import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
 import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
-public class RouteSelectionActivity extends AppCompatActivity implements SearchAheadFragmentCallbacks {
+public class RouteSelectionActivity extends AppCompatActivity
+        implements CurrentLocationProvider, SearchAheadFragment.OnSearchResultSelectedListener {
 
     private static final String TAG = LogUtil.generateLoggingTag(RouteSelectionActivity.class);
 
@@ -98,8 +93,6 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     private static final float SELECTED_ROUTE_OPACITY = 1.00f;
 
     private static final String SEARCH_AHEAD_FRAGMENT_TAG = "tag_search_ahead_fragment";
-
-    SearchAheadFragment mSearchAheadFragment;
 
     @BindView(R.id.start)
     protected Button mStartButton;
@@ -158,35 +151,27 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         Log.d(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
         setContentView(R.layout.activity_route_selection);
         ButterKnife.bind(this);
 
-        MQFontProviderUtil.init(this);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         mApp = (MQNavigationSampleApplication) getApplication();
         mRouteService = new RouteService.Builder().build(getApplicationContext(), BuildConfig.API_KEY);
 
-//        SearchBarView searchBarView = toolbar.findViewById(R.id.fake_search_bar_view);
-//        searchBarView.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                List<RouteStop> routeStops = getRouteStops();
-//                if (routeStops.isEmpty()) {
-//                    Toast.makeText(RouteSelectionActivity.this, R.string.route_stops_not_available, Toast.LENGTH_SHORT)
-//                            .show();
-//                } else {
-//                    RouteSettingsFragment routeSettingsFragment = RouteSettingsFragment.newInstance(getRouteStops());
-//
-//                    getSupportFragmentManager().beginTransaction()
-//                            .add(android.R.id.content, routeSettingsFragment, SEARCH_AHEAD_FRAGMENT_TAG)
-//                            .addToBackStack(null)
-//                            .commit();
-//                }
-//            }
-//        });
+        // setup search-bar placeholder view; will display search-ahead fragment when clicked
+        SearchBarView searchBarView = toolbar.findViewById(R.id.fake_search_bar_view);
+        searchBarView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SearchAheadFragment searchAheadFragment = SearchAheadFragment.newInstance();
+                getSupportFragmentManager().beginTransaction()
+                            .add(android.R.id.content, searchAheadFragment, SEARCH_AHEAD_FRAGMENT_TAG)
+                            .addToBackStack(null)
+                            .commit();
+            }
+        });
 
         mMap.onCreate(savedInstanceState);
         mMap.getMapAsync(new OnMapReadyCallback() {
@@ -323,12 +308,18 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
                 getResources().getColor(R.color.disabled_grey));
     }
 
+    @Override
+    public void onSearchResultSelected(String displayName, Coordinate coordinate) {
+        // add selected search-result as (another) destination to route
+        addDestinationToRoute(coordinate);
+    }
+
     private void addDestinationToRoute(Coordinate destinationCoordinate) {
         mDestinationMarkers.add(markDestination(destinationCoordinate, R.color.marker_blue));
 
+        // get bounding-rect of origin point and all destinations; adjust map-view accordingly to show all
         LatLngBounds.Builder latLngBoundsBuilder = new LatLngBounds.Builder();
         latLngBoundsBuilder.include(mOriginMarker.getPosition());
-
         for (Marker marker: mDestinationMarkers) {
             latLngBoundsBuilder.include(marker.getPosition());
         }
@@ -353,7 +344,7 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     // Lazy load map top padding
     private float getMapExtentPaddingTop() {
         if (mMapExtentPaddingTop == null) {
-            int searchBarViewHeightWithPadding = 85; // Based off search bar view height, padding, & marker height
+            int searchBarViewHeightWithPadding = 85 + (2*16); // Based off search bar view height, padding, & marker height
             mMapExtentPaddingTop = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                     searchBarViewHeightWithPadding, getResources().getDisplayMetrics());
         }
@@ -363,7 +354,7 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
     // Lazy load map bottom padding
     private float getMapExtentPaddingBottom() {
         if (mMapExtentPaddingBottom == null) {
-            int routeButtons = 50; // Based off route buttons at bottom of map's height & padding
+            int routeButtons = 50 + (2*16); // Based off route buttons at bottom of map's height & padding
             mMapExtentPaddingBottom = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                     routeButtons, getResources().getDisplayMetrics());
         }
@@ -421,15 +412,6 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
 
         NavigationActivity.start(this, mSelectedRoute);
     }
-
-//    @OnClick(R.id.search)
-//    protected void showSearchAheadFragment() {
-//        com.mapquest.android.commoncore.model.LatLng mapCenter = MapUtils.toMapQuestLatLng(mMapController.getCameraPosition().target);
-//        SearchAheadFragment fragment = SearchAheadFragment.newInstance(mapCenter);
-//        getSupportFragmentManager().beginTransaction().add(android.R.id.content, fragment, SEARCH_AHEAD_FRAGMENT_TAG)
-//                .addToBackStack(null).commit();
-//        mSearchAheadFragment = fragment;
-//    }
 
     private void acquireCurrentLocationAndZoom(final MapboxMap mapController) {
         LocationProviderAdapter locationProviderAdapter = mApp.getLocationProviderAdapter();
@@ -618,24 +600,18 @@ public class RouteSelectionActivity extends AppCompatActivity implements SearchA
         return new LatLng(coordinate.getLatitude(), coordinate.getLongitude());
     }
 
+    @Nullable
     @Override
-    public void onSelectResult(SearchAheadResult result) {
-        if (result.getAddress().getDisplayGeoPoint() != null) {
-            Log.d(TAG, "onSelectResult(): good address");
-            mSearchAheadFragment.setSearchFieldNoQuery(AddressDisplayUtil.forResources(getResources()).getDisplayString(result));
-            getSupportFragmentManager().beginTransaction().remove(mSearchAheadFragment).commit();
-            mMapController.getOnMapLongClickListener().onMapLongClick(MapUtils.toMapBoxLatLng(result.getAddress().getDisplayGeoPoint()));
-        } else {
-            Log.e(TAG, "onSelectResult(): bad address, lat long not available");
-            toast(RouteSelectionActivity.this, " Coordinates for searched location not available!");
-        }
+    public com.mapquest.android.commoncore.model.LatLng getCurrentLocation() {
+        return toMapQuestLatLng(mMapController.getCameraPosition().target);
     }
 
-    @Override
-    public void onCancel() {
-        Log.d(TAG, "onCancel()");
-        getSupportFragmentManager().beginTransaction().remove(mSearchAheadFragment).commit();
-    }
+    // FIXME ??
+//    @Override
+//    public void onCancel() {
+//        Log.d(TAG, "onCancel()");
+//        getSupportFragmentManager().beginTransaction().remove(mSearchAheadFragment).commit();
+//    }
 
     private class RouteClickListener implements OnMapClickListener {
         @Override

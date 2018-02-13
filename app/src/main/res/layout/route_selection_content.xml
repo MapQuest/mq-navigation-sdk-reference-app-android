@@ -82,7 +82,7 @@
         android:layout_gravity="top|left"
         android:layout_marginStart="16dp"
         android:layout_marginLeft="16dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="72dp"
         android:src="@drawable/ic_gps_fixed_white_24dp"
         app:backgroundTint="@color/mapbox_blue"
         app:borderWidth="0dp"
