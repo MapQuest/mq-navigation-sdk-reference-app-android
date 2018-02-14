@@ -198,8 +198,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             mDirectionsListLayout.setVisibility(View.VISIBLE);
             mDirectionsListToggleButton.setText(R.string.map_view_title);
         } else {
-            mDirectionsListLayout.setVisibility(View.GONE);
             mMainNavMapLayout.setVisibility(View.VISIBLE);
+            mDirectionsListLayout.setVisibility(View.GONE);
             mDirectionsListToggleButton.setText(R.string.list_view_title);
         }
     }
@@ -247,12 +247,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         if (getIntent().getExtras() != null) {
             mRoute = getIntent().getExtras().getParcelable(ROUTE_KEY);
         }
-
-        if(savedInstanceState != null) {
-            mShouldRestoreFollowMode = savedInstanceState.getBoolean(FOLLOWING_KEY);
-        } else {
-            mShouldRestoreFollowMode = true;
-        }
+        mShouldRestoreFollowMode = (savedInstanceState == null) || savedInstanceState.getBoolean(FOLLOWING_KEY);
 
         mLocationProviderAdapter = ((MQNavigationSampleApplication) getApplication()).getLocationProviderAdapter();
 
@@ -512,13 +507,13 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     }
 
     private void mapPath(RouteLeg routeLeg, List<CongestionSpan> trafficConditions) {
-        clearRoutePath();
         if(mMapController == null) {
             return;
         }
         List<SpanPathPair<CongestionSpan>> segments = new ShapeSegmenter.Builder().build().segmentPath(routeLeg.getShape(), trafficConditions);
         for(SpanPathPair<CongestionSpan> segment : segments) {
             int color = getCongestionColor(segment.getSpan());
+
             mRoutePolylines.add(mapPathSegment(segment.getShapeCoordinates(), color, PATH_WIDTH));
         }
     }
@@ -623,11 +618,17 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             mInitialRoute = route;
             return;
         }
-        // map segments with traffic-based colors
-        for (RouteLeg leg: route.getLegs()) {
-            // draw leg destinations
-            mRouteEndMarker = mMapController.addMarker(buildDownArrowMarkerOptions(this, R.color.marker_red)
+
+        // map all route-leg segments (with path colors based on traffic-conditions)
+        clearRoutePath();
+        List<RouteLeg> routeLegs = route.getLegs();
+        for (RouteLeg leg: routeLegs) {
+            // draw leg destination markers: intermediate destinations are blue; final is red marker
+            int marker_color = (routeLegs.indexOf(leg) == routeLegs.size() - 1) ? R.color.marker_red : R.color.marker_blue;
+            mRouteEndMarker = mMapController.addMarker(buildDownArrowMarkerOptions(this, marker_color)
                     .position(toLatLng(lastValue(leg.getShape().getCoordinates()))));
+
+            // draw a route-leg path
             mapPath(leg, leg.getTraffic().getConditions());
         }
     }
@@ -711,7 +712,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         if(maneuver == null) {
             mNextManeuverLabel.setText("");
         } else {
-            String labelText = !maneuver.getName().trim().isEmpty() ?
+            String labelText = ((maneuver.getName() != null) && !maneuver.getName().trim().isEmpty()) ?
                     maneuver.getTypeText().toLowerCase() + ", " + maneuver.getName() :
                     maneuver.getTypeText().toLowerCase();
             mNextManeuverLabel.setText(labelText);
@@ -814,12 +815,10 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         resetUi();
     }
 
-    private void showSkipLegButtonIfNotOnFinalLeg() {
+    private boolean isNavigatingFinalRouteLeg() {
         Route currentRoute = mNavigationManager.getRoute();
         int currentLegIndex = currentRoute.getLegs().indexOf(mNavigationManager.getCurrentRouteLeg());
-
-        // Allow users to skip if not on last leg of route
-        showSkipLegButton(currentLegIndex < (currentRoute.getLegs().size() - 1));
+        return (currentLegIndex < (currentRoute.getLegs().size() - 1));
     }
 
     private void showSkipLegButton(boolean enabled) {
@@ -980,7 +979,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                             public void onClick(DialogInterface dialog, int which) {
                                 destinationAcceptanceHandler.confirmArrival(true);
                                 updateDirectionsList();
-                                showSkipLegButtonIfNotOnFinalLeg();
+
+                                // allow user to skip ahead only if not on final leg of route
+                                showSkipLegButton(!isNavigatingFinalRouteLeg());
                             }
                         })
                         .setOnCancelListener(new DialogInterface.OnCancelListener() {

@@ -75,6 +75,7 @@ import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColo
 import static com.mapquest.navigation.sampleapp.util.ColorUtil.setOpacity;
 import static com.mapquest.navigation.sampleapp.util.MapUtils.toMapQuestLatLng;
 import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
+import static com.mapquest.navigation.sampleapp.util.UiUtil.convertStringToDrawable;
 import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class RouteSelectionActivity extends AppCompatActivity
@@ -228,8 +229,9 @@ public class RouteSelectionActivity extends AppCompatActivity
         }
         mDestinationCoordinates.clear();
 
-        enableButton(mRetrieveRoutesButton, false);
         enableButton(mClearRoutesButton, false);
+        enableButton(mRetrieveRoutesButton, false);
+        enableButton(mStartButton, false);
     }
 
     private void requestLocationPermissions(LocationPermissionsResultListener permissionsResultListener) {
@@ -288,18 +290,19 @@ public class RouteSelectionActivity extends AppCompatActivity
 
     @OnClick(R.id.clear_routes)
     protected void clearRoutes() {
-        mRetrieveRoutesButton.setVisibility(View.VISIBLE);
-        mStartButton.setVisibility(View.GONE);
-        mRouteNameTextView.setVisibility(View.GONE);
-
-        enableButton(mRetrieveRoutesButton, false);
-        enableButton(mClearRoutesButton, false);
-
         clearMappedRoutes();
         for (Marker marker : new ArrayList<>(mDestinationMarkers)) {
             removeDestinationMarker(marker);
         }
         mDestinationCoordinates.clear();
+
+        mRouteNameTextView.setVisibility(View.GONE);
+        enableButton(mClearRoutesButton, false);
+        enableButton(mRetrieveRoutesButton, false);
+        enableButton(mStartButton, false);
+
+        Toast.makeText(getApplicationContext(), "All points cleared. Starting location is current location.\n\n" +
+                "Long-press on the map to add a new destination location...", Toast.LENGTH_LONG).show();
     }
 
     private void enableButton(Button button, boolean enable) {
@@ -315,6 +318,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     }
 
     private void addDestinationToRoute(Coordinate destinationCoordinate) {
+        mDestinationCoordinates.add(destinationCoordinate);
         mDestinationMarkers.add(markDestination(destinationCoordinate, R.color.marker_blue));
 
         // get bounding-rect of origin point and all destinations; adjust map-view accordingly to show all
@@ -330,15 +334,11 @@ public class RouteSelectionActivity extends AppCompatActivity
                 100,
                 (int) getMapExtentPaddingBottom()));
 
-        mStartButton.setVisibility(View.GONE);
-        mRetrieveRoutesButton.setVisibility(View.VISIBLE);
-        mRouteNameTextView.setVisibility(View.GONE);
         mSelectedRoute = null;
 
-        mDestinationCoordinates.add(destinationCoordinate);
-
-        enableButton(mRetrieveRoutesButton, true);
         enableButton(mClearRoutesButton, true);
+        enableButton(mRetrieveRoutesButton, true);
+        enableButton(mStartButton, false);
     }
 
     // Lazy load map top padding
@@ -354,7 +354,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     // Lazy load map bottom padding
     private float getMapExtentPaddingBottom() {
         if (mMapExtentPaddingBottom == null) {
-            int routeButtons = 50 + (2*16); // Based off route buttons at bottom of map's height & padding
+            int routeButtons = 50 + (2*16); // per route buttons at bottom of map's height & padding
             mMapExtentPaddingBottom = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                     routeButtons, getResources().getDisplayMetrics());
         }
@@ -376,6 +376,8 @@ public class RouteSelectionActivity extends AppCompatActivity
 
         mMap.onResume();
         mApp.getLocationProviderAdapter().addLocationListener(mFollowUserLocationListener);
+
+        enableButton(mStartButton, (mSelectedRoute != null)); // enable "start nav" if there's (still) a selected route
 
         // Clear out NavigationNotificationService when coming back from NavigationActivity to destroy
         // all references to the existing NavigationManager and LocationProviderAdapter
@@ -407,7 +409,6 @@ public class RouteSelectionActivity extends AppCompatActivity
 
     @OnClick(R.id.start)
     protected void startNavigationActivity() {
-        mStartButton.setVisibility(View.GONE);
         mRouteNameTextView.setVisibility(View.GONE);
 
         NavigationActivity.start(this, mSelectedRoute);
@@ -427,6 +428,9 @@ public class RouteSelectionActivity extends AppCompatActivity
                                         CameraUpdateFactory.newLatLngZoom(toLatLng(acquiredLocation), DEFAULT_ZOOM_LEVEL));
                                 mapController.setOnMapLongClickListener(mMapLongClickListener);
                                 markOrigin(acquiredLocation);
+
+                                Toast.makeText(getApplicationContext(), "Starting point is your Current Location.\n\n" +
+                                                "Long-press on the map to add a destination location...", Toast.LENGTH_LONG).show();
                             }
                         }, 100);
                     }
@@ -457,16 +461,13 @@ public class RouteSelectionActivity extends AppCompatActivity
                 if(mRoutingDialog != null) {
                     mRoutingDialog.dismiss();
                 }
-                if(!BuildConfig.FLAVOR.equals("mock")) {
-                    toast(RouteSelectionActivity.this, routes.size() + " routes returned.");
-                }
                 mapRoutes(routes, null);
-
-// FIXME: when using setSelectedRoute(), below
-//                if(routes.size() == 1) {
-//                    // if only one route returned, auto-select it
-//                    setSelectedRoute(routes.get(0));
-//                }
+                if(routes.size() > 1) {
+                    toast(RouteSelectionActivity.this, routes.size() + " routes returned.\n\nChoose one to navigate by tapping on it.");
+                } else {
+                    // if only one route returned, auto-select it
+                    setSelectedRoute(routes.get(0));
+                }
             }
 
             @Override
@@ -606,37 +607,29 @@ public class RouteSelectionActivity extends AppCompatActivity
         return toMapQuestLatLng(mMapController.getCameraPosition().target);
     }
 
-    // FIXME ??
-//    @Override
-//    public void onCancel() {
-//        Log.d(TAG, "onCancel()");
-//        getSupportFragmentManager().beginTransaction().remove(mSearchAheadFragment).commit();
-//    }
-
     private class RouteClickListener implements OnMapClickListener {
         @Override
         public void onMapClick(@NonNull LatLng latLng) {
 
-// FIXME: when using setSelectedRoute(), below
-//            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
-//            setSelectedRoute(findNearestRoute(drawnRoutes, toCoordinate(latLng)));
+            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+            setSelectedRoute(findNearestRoute(drawnRoutes, toCoordinate(latLng)));
 
-            List<Route> routes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
-            clearMappedRoutes();
-
-            mSelectedRoute = findNearestRoute(routes, toCoordinate(latLng));
-            if(mSelectedRoute != null) {
-                // Move to the end, so the selected route gets drawn over the rest
-                if(routes.remove(mSelectedRoute)) {
-                    routes.add(mSelectedRoute);
-
-                    mapRoutes(routes, mSelectedRoute);
-                }
-                mStartButton.setVisibility(View.VISIBLE);
-
-                mRouteNameTextView.setVisibility(View.VISIBLE);
-                mRouteNameTextView.setText(mSelectedRoute.getName() != null ? mSelectedRoute.getName() : "");
-            }
+//            List<Route> routes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+//            clearMappedRoutes();
+//
+//            mSelectedRoute = findNearestRoute(routes, toCoordinate(latLng));
+//            if(mSelectedRoute != null) {
+//                // Move to the end, so the selected route gets drawn over the rest
+//                if(routes.remove(mSelectedRoute)) {
+//                    routes.add(mSelectedRoute);
+//
+//                    mapRoutes(routes, mSelectedRoute);
+//                }
+//                mRouteNameTextView.setText(mSelectedRoute.getName() != null ? mSelectedRoute.getName() : "");
+//                mRouteNameTextView.setVisibility(View.VISIBLE);
+//
+//                enableButton(mStartButton, true);
+//            }
         }
     }
 
@@ -653,10 +646,10 @@ public class RouteSelectionActivity extends AppCompatActivity
                 drawnRoutes.add(selectedRoute);
                 mapRoutes(drawnRoutes, selectedRoute);
             }
-            mStartButton.setVisibility(View.VISIBLE);
-
             mRouteNameTextView.setVisibility(View.VISIBLE);
             mRouteNameTextView.setText(mSelectedRoute.getName() != null ? mSelectedRoute.getName() : "");
+
+            enableButton(mStartButton, true);
         }
     }
 
