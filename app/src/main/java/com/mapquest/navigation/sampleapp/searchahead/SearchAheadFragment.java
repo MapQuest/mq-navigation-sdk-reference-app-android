@@ -1,36 +1,35 @@
 package com.mapquest.navigation.sampleapp.searchahead;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.util.Log;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.FrameLayout;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mapquest.android.commoncore.model.LatLng;
 import com.mapquest.android.searchahead.IllegalQueryParameterException;
+import com.mapquest.android.searchahead.SearchAheadService;
 import com.mapquest.android.searchahead.model.SearchAheadQuery;
 import com.mapquest.android.searchahead.model.SearchCollection;
+import com.mapquest.android.searchahead.model.response.Place;
+import com.mapquest.android.searchahead.model.response.SearchAheadResponse;
+import com.mapquest.android.searchahead.model.response.SearchAheadResult;
+import com.mapquest.navigation.model.location.Coordinate;
 import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.R;
-//import com.mapquest.navigation.sampleapp.ISampleAppConfiguration;
-//import com.mapquest.navigation.sampleapp.SampleAppConfiguration;
-import com.mapquest.navigation.sampleapp.ISampleAppConfiguration;
-import com.mapquest.navigation.sampleapp.SampleAppConfiguration;
-import com.mapquest.navigation.sampleapp.searchahead.fragment.AbstractFragment;
-import com.mapquest.navigation.sampleapp.searchahead.util.AddressDisplayUtil;
-import com.mapquest.navigation.sampleapp.searchahead.view.OnSingleItemClickListener;
+import com.mapquest.navigation.sampleapp.location.CurrentLocationProvider;
 import com.mapquest.navigation.sampleapp.util.UiUtil;
+import com.mapquest.navigation.sampleapp.view.OnSingleItemClickListener;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -40,174 +39,160 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static android.content.ContentValues.TAG;
+public class SearchAheadFragment extends Fragment {
 
-public class SearchAheadFragment extends AbstractFragment<SearchAheadFragmentCallbacks>
-        implements SearchBarViewCallbacks, AbsListView.OnScrollListener {
+    // NOTE: container Activity must implement this interface
+    public interface OnSearchResultSelectedListener {
+        public void onSearchResultSelected(String displayName, Coordinate coordinate);
+    }
 
-    public static final String EXTRA_MAP_CENTER_LAT = "map_center_lat";
-    public static final String EXTRA_MAP_CENTER_LNG = "map_center_lng";
-    public static final String EXTRA_SEARCH_PROCESSED_FLAG = "extra_search_in_progress";
-    public static final String EXTRA_SEARCH_TEXT = "extra_search_text";
+    @Nullable
+    private OnSearchResultSelectedListener mOnSearchResultSelectedListener;
 
-    @BindView(R.id.search_bar_view_container)
-    protected FrameLayout mSearchBarViewContainer;
+    @Nullable
+    private CurrentLocationProvider mCurrentLocationProvider;
 
-    @BindView(R.id.search_ahead_list_view)
+    @Nullable
+    private SearchAheadAdapter mSearchAheadAdapter;
+
+    private static final String CURRENT_ROUTE_STOPS_KEY = "current_route_stops";
+
+    @BindView(R.id.searchBarView)
+    protected SearchBarView mSearchBarView;
+
+    @BindView(R.id.searchAheadListView)
     protected ListView mSearchAheadListView;
 
-    private View mRootView;
-    private SearchBarView mSearchBarView;
+    private SearchAheadService mSearchAheadService;
 
-    private static final int SEARCH_AHEAD_RESULT_LIMIT = 10;
-    private SearchAheadAdapter mSearchAheadAdapter;
-    private SearchAheadPerformer mSearchAheadPerformer;
-    private SearchActivityServicePerformer mSearchActivityServicePerformer;
-    private SearchAheadFeedback mSearchAheadFeedback;
     private final static List<SearchCollection> SEARCH_AHEAD_SEARCH_COLLECTIONS = Arrays.asList(
             SearchCollection.ADDRESS, SearchCollection.ADMINAREA, SearchCollection.POI,
             SearchCollection.AIRPORT, SearchCollection.FRANCHISE);
 
-    private LatLng mCurrentMapCenter;
-
-    private SampleAppConfiguration mAceConfig;
-
+    private String mText;
     private Toast mMaxCharacterToast;
 
-    private String mText;
-    private boolean mSearchTextProcessed;
+    // FIXME: unused??
+    private final String SEARCH_AHEAD_URI_PROD = "https://searchahead-public-api-b2c-production.cloud.mapquest.com/search/v3/prediction";
 
-    public static SearchAheadFragment newInstance(LatLng mapCenter) {
+    private final static int SEARCH_AHEAD_RESULT_LIMIT = 10;
 
+    public static SearchAheadFragment newInstance() { // List<RouteStop> currentRouteStops) {
         Bundle bundle = new Bundle();
-        bundle.putSerializable(EXTRA_MAP_CENTER_LAT, mapCenter.getLatitude());
-        bundle.putSerializable(EXTRA_MAP_CENTER_LNG, mapCenter.getLongitude());
+        // add any args, if any, to the bundle here...
 
         SearchAheadFragment fragment = new SearchAheadFragment();
         fragment.setArguments(bundle);
-
         return fragment;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Bundle infoBundle = savedInstanceState != null ? savedInstanceState : getArguments();
-        mSearchTextProcessed = infoBundle.getBoolean(EXTRA_SEARCH_PROCESSED_FLAG, false);
+        Bundle bundle = savedInstanceState != null ? savedInstanceState : getArguments();
+        // parse any saved-state from the bundle here...
 
-        float lat = (float) getArguments().getSerializable(EXTRA_MAP_CENTER_LAT);
-        float lng = (float) getArguments().getSerializable(EXTRA_MAP_CENTER_LNG);
-        mCurrentMapCenter = new LatLng(lat, lng);
-
-        mText = "";
-
-        mSearchAheadAdapter = new SearchAheadAdapter(getActivity());
-        mSearchAheadPerformer = new SearchAheadPerformer(this
-                .getActivity().getApplicationContext(), BuildConfig.API_KEY);
-        mSearchActivityServicePerformer = new SearchActivityServicePerformer(
-                new SearchActivityServiceClient(getConfig()));
+        mSearchAheadService = new SearchAheadService(getActivity().getApplicationContext(), BuildConfig.API_KEY);
     }
 
+    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        super.onCreateView(inflater, container, savedInstanceState);
-        mRootView = inflater.inflate(R.layout.view_search_ahead, container, false);
-        ButterKnife.bind(this, mRootView);
-
-        mSearchBarView = new SearchBarView(getActivity(), this);
-        mSearchBarViewContainer.addView(mSearchBarView);
-
-        updateTextLineUiElements();
-        mSearchAheadListView.setEmptyView(null);
-        setupListeners();
-
-        if (mText != null || mSearchTextProcessed) {
-            // Set search field if coming back to a restored fragment
-            mSearchBarView.setSearchField(mText);
-        }
-
-        return mRootView;
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString(EXTRA_SEARCH_TEXT, mText);
-        outState.putBoolean(EXTRA_SEARCH_PROCESSED_FLAG, mSearchTextProcessed);
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.search_ahead_fragment, container, false);
+        ButterKnife.bind(this, view);
+        return view;
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-    }
 
-    @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        UiUtil.hideKeyboard(getView());
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {}
-
-    @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
-        // Dismiss keyboard when scrolling list
-        if (scrollState == SCROLL_STATE_TOUCH_SCROLL) {
-            view.requestFocus();
-            UiUtil.hideKeyboard(view);
-        }
-    }
-
-    /** START: SearchBarViewCallbacks **/
-
-    @Override
-    public void onCancel() {
-        if (getCallbacks() != null) {
-            getCallbacks().onCancel();
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            try {
+                mOnSearchResultSelectedListener = (OnSearchResultSelectedListener) activity;
+            } catch (ClassCastException e) {
+                throw new ClassCastException(activity.toString()
+                        + " must implement OnSearchResultSelectedListener");
+            }
         }
     }
 
     @Override
-    public void onUpdateContentForSearchText(String text) {
-        updateContentForSearchText(text);
+    public void onStart() {
+        super.onStart();
+
+        mCurrentLocationProvider = (CurrentLocationProvider) getActivity();
+
+        mSearchAheadAdapter = new SearchAheadAdapter(getActivity().getApplicationContext());
+        mSearchAheadListView.setAdapter(mSearchAheadAdapter);
+        mSearchAheadListView.setOnItemClickListener(new OnSingleItemClickListener() {
+            @Override
+            public void onSingleItemClick(AdapterView parent, View view, int position, long id) {
+                SearchAheadResult searchAheadResult = (SearchAheadResult) parent.getItemAtPosition(position);
+
+                Place resultPlace = searchAheadResult.getPlace();
+                if (resultPlace != null) {
+                    LatLng latLng = searchAheadResult.getPlace().getLatLng();
+                    Coordinate searchResultCoordinate = new Coordinate(latLng.getLatitude(), latLng.getLongitude());
+                    mOnSearchResultSelectedListener.onSearchResultSelected(searchAheadResult.getDisplayString(), searchResultCoordinate);
+                    mSearchBarView.clearSearchField();
+
+                    UiUtil.hideKeyboard(parent);
+                }
+            }
+        });
     }
 
     @Override
-    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        if (actionId == EditorInfo.IME_NULL
-                && (event == null || event.getAction() == KeyEvent.ACTION_DOWN)
-                && StringUtils.isNotBlank(mText)) {
-            UiUtil.hideKeyboard(v);
-        }
-        return false;
+    public void onResume() {
+        super.onResume();
+
+        mSearchBarView.setSearchBarViewCallbacks(new SearchBarViewCallbacks() {
+            @Override
+            public void onUpdateContentForSearchText(String text) {
+                if (text.length() > 0) {
+                    mSearchAheadListView.setVisibility(View.VISIBLE);
+                } else {
+                    mSearchAheadListView.setVisibility(View.GONE);
+                }
+                updateContentForSearchText(text);
+            }
+
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_NULL
+                        && (event == null || event.getAction() == KeyEvent.ACTION_DOWN)
+                        && StringUtils.isNotBlank(mSearchBarView.getSearchText())) {
+                    UiUtil.hideKeyboard(v);
+                }
+                return false;
+            }
+        });
+
+        // set the focus on the search bar edit text when the fragment is initialized
+        mSearchBarView.setFocusOnEditText();
     }
 
     @Override
-    public void onClearClicked() {
-        mText = "";
+    public void onPause() {
+        super.onPause();
     }
-
-    /** Search Ahead UI Updates **/
 
     protected void updateContentForSearchText(final String searchText) {
         mText = searchText;
-        mSearchTextProcessed = true;
+        LatLng currentMapCenter = ((CurrentLocationProvider) getActivity()).getCurrentLocation();
 
+        // first, build a search-ahead query...
         if (searchText.length() < 2) {
             mSearchAheadAdapter.clear();
         } else {
             SearchAheadQuery searchAheadQuery;
             try {
-                Log.d(TAG, "updateContentForSearchText mText: " + mText + " ; mCurrentMapCenter: " + mCurrentMapCenter);
+                // Log.d(TAG, "updateContentForSearchText mText: " + mText + " ; mCurrentMapCenter: " + mCurrentMapCenter);
                 searchAheadQuery = new SearchAheadQuery.Builder(mText, SEARCH_AHEAD_SEARCH_COLLECTIONS)
-                        .location(mCurrentMapCenter)
+                        .location(currentMapCenter)
                         .limit(SEARCH_AHEAD_RESULT_LIMIT)
                         .feedback(true)
                         .build();
@@ -224,8 +209,9 @@ public class SearchAheadFragment extends AbstractFragment<SearchAheadFragmentCal
                 return;
             }
 
-            mSearchAheadPerformer.predictResultsFromQuery(searchAheadQuery,
-                    new SearchAheadPerformer.SearchAheadResponseCallback() {
+            // and execute the search-ahead query...
+            mSearchAheadService.predictResultsFromQuery(searchAheadQuery,
+                    new SearchAheadService.SearchAheadResponseCallback() {
                         @Override
                         public void onSuccess(@NonNull SearchAheadResponse response) {
                             List<SearchAheadResult> searchAheadResults = response.getResults();
@@ -234,84 +220,13 @@ public class SearchAheadFragment extends AbstractFragment<SearchAheadFragmentCal
                                 mSearchAheadAdapter.clear();
                                 mSearchAheadAdapter.addAll(searchAheadResults);
                             }
+                        }
 
-                            mSearchAheadFeedback = response.getFeedback();
-                            if (mSearchAheadFeedback != null) {
-                                mSearchActivityServicePerformer.makeViewedSearchActivityRequest(mSearchAheadFeedback,
-                                        response.getResults());
-                            }
+                        @Override
+                        public void onError(Exception e) {
+                            // FIXME: report error to listener/UI
                         }
                     });
-        }
-    }
-
-    @NonNull
-    public ISampleAppConfiguration getConfig() {
-        if (mAceConfig == null) {
-            mAceConfig = new SampleAppConfiguration(getContext());
-        }
-        return mAceConfig;
-    }
-
-    protected void updateTextLineUiElements() {
-        mSearchBarView.updateTextLineUiElements();
-    }
-
-    protected void setupListeners() {
-        setUpListView(mSearchAheadListView, mSearchAheadAdapter, false);
-    }
-
-    protected void setUpListView(final ListView listView, ListAdapter adapter, boolean resetScrollPosition) {
-        listView.setOnScrollListener(this);
-        listView.setOnItemClickListener(getOnSingleItemClickListener());
-        listView.setAdapter(adapter);
-        if (resetScrollPosition) {
-            // Don't remember list scroll offset. Romain Guy describes a workaround
-            // but gives no explanation as to why it's necessary:
-            // https://groups.google.com/d/msg/android-developers/EnyldBQDUwE/BhWOgBtv2ycJ
-            listView.post(new Runnable() {
-                @Override
-                public void run() {
-                    listView.smoothScrollToPosition(0);
-                }
-            });
-        }
-    }
-
-    protected OnSingleItemClickListener getOnSingleItemClickListener() {
-        return new OnSingleItemClickListener() {
-            @Override
-            public void onSingleItemClick(AdapterView<?> parent, View view, int position, long id) {
-                SearchAheadResult searchAheadResult = getSelectedResultModel(parent, position);
-
-                setTextWithoutSearching(
-                        AddressDisplayUtil.forResources(getResources()).getDisplayString(searchAheadResult));
-
-                updateTextLineUiElements();
-
-                UiUtil.hideKeyboard(view);
-
-                if (getCallbacks() != null) {
-                    getCallbacks().onSelectResult(searchAheadResult);
-                }
-            }
-        };
-    }
-
-    protected SearchAheadResult getSelectedResultModel(AdapterView<?> parent, int selectedPosition) {
-        return (SearchAheadResult) parent.getItemAtPosition(selectedPosition);
-    }
-
-    protected void setTextWithoutSearching(String text) {
-        mText = text;
-        mSearchBarView.setTextWithoutSearching(text);
-    }
-
-    public void setSearchFieldNoQuery(String text) {
-        if (isAdded()) {
-            mSearchBarView.setTextWithoutSearching(text);
-            mText = text;
-            updateTextLineUiElements();
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.mapquest.navigation.sampleapp.searchahead.view;
+package com.mapquest.navigation.sampleapp.view;
 
 import android.os.SystemClock;
 import android.view.View;

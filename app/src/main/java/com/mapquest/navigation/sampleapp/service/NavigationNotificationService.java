@@ -28,18 +28,30 @@ import com.mapquest.navigation.model.location.Coordinate;
 
 public class NavigationNotificationService extends Service implements LifecycleRegistryOwner {
 
+    public static final String NAVIGATION_LANGUAGE_CODE_KEY = "navigation_language_code";
+
     private static final String TAG = LogUtil.generateLoggingTag(NavigationNotificationService.class);
     private static final int NOTIFICATION_ID = 1;
 
-    private NavigationManager mNavigationManager;
     private IBinder mBinder = new LocalBinder();
+    private NavigationManager mNavigationManager;
+    private String mLanguageCode;
     private Route mRoute;
+
     private TextToSpeechPromptListenerManager mTextToSpeechPromptListenerManager;
     private LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand()");
+
+        if (intent.getExtras() != null) {
+            mLanguageCode = intent.getExtras().getString(NAVIGATION_LANGUAGE_CODE_KEY);
+        }
+
+        // instantiate the TTS manager (and engine) here using the provided language tag
+        // NOTE: the TTS engine will get appropriately destroyed via a lifecycle-listener for ON_DESTROY, as registered below
+        mTextToSpeechPromptListenerManager = new TextToSpeechPromptListenerManager(this, getLifecycle(), mLanguageCode);
 
         //
         // Note that START_STICKY seems to be preferred for Services that continue to run in the background
@@ -69,8 +81,6 @@ public class NavigationNotificationService extends Service implements LifecycleR
     public void onCreate() {
         super.onCreate();
         mLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
-
-        mTextToSpeechPromptListenerManager = new TextToSpeechPromptListenerManager(this, getLifecycle());
     }
 
     @Override

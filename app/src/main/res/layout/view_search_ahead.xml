@@ -25,5 +25,4 @@
             android:dividerHeight="@dimen/default_divider_height" />
 
     </LinearLayout>
-
 </FrameLayout>

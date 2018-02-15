@@ -1,4 +1,4 @@
-package com.mapquest.navigation.sampleapp.searchahead.util;
+package com.mapquest.navigation.sampleapp.util;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 

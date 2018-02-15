@@ -23,4 +23,8 @@
         </attr>
         <attr name="textAppearance" format="reference" />
     </declare-styleable>
+
+    <declare-styleable name="SearchBarView">
+        <attr name="placeHolder" format="boolean"/>
+    </declare-styleable>
 </resources>

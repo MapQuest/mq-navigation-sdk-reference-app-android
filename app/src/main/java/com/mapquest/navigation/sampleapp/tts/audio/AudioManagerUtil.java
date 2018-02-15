@@ -5,7 +5,8 @@ import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
 
 public final class AudioManagerUtil {
-    private AudioManagerUtil() { }
+    private AudioManagerUtil() {
+    }
 
     /**
      * @return Whether the outcome of an

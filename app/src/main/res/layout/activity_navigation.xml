@@ -10,6 +10,7 @@
 
     <!-- Upcoming maneuver bar -->
     <RelativeLayout
+        android:id="@+id/maneuverBarLayout"
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:background="@drawable/black_bottom_border">
@@ -29,7 +30,7 @@
             android:layout_alignTop="@+id/next_maneuver_icon"
             android:layout_toRightOf="@+id/next_maneuver_icon"
             android:text="-"
-            android:textSize="30sp"
+            android:textSize="24sp"
             android:textStyle="bold"/>
 
         <com.mapquest.navigation.sampleapp.view.FontTextView
@@ -39,8 +40,33 @@
             android:layout_alignLeft="@+id/next_maneuver_distance"
             android:layout_below="@+id/next_maneuver_distance"
             android:layout_gravity="fill_horizontal"
+            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             android:text="-"
-            android:textSize="18sp"/>
+            android:textSize="16sp"/>
+
+        <ImageView
+            android:id="@+id/pause_resume_icon"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_pause"
+            android:layout_toLeftOf="@+id/skipLegIcon"
+            android:layout_toStartOf="@id/skipLegIcon"/>
+
+        <ImageView
+            android:id="@id/skipLegIcon"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_skip_next_gray_24dp"
+            />
 
     </RelativeLayout>
 
@@ -252,10 +278,11 @@
 
     <!-- Arrival bar -->
     <RelativeLayout
+        android:id="@+id/arrivalBarLayout"
         android:layout_width="match_parent"
         android:layout_height="65dp"
         android:background="@drawable/black_top_border"
-        android:padding="@dimen/medium_padding">
+        android:padding="@dimen/small_padding">
 
         <TextView
             android:id="@+id/stop"
@@ -266,11 +293,22 @@
             android:textSize="24dp"/>
 
         <com.mapquest.navigation.sampleapp.view.FontTextView
-            android:id="@+id/time_of_arrival"
+            android:id="@+id/eta_next_destination"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_toRightOf="@id/stop"
+            android:text=""
+            android:textColor="@color/mapbox_blue"
+            android:textSize="24sp"/>
+
+        <com.mapquest.navigation.sampleapp.view.FontTextView
+            android:id="@+id/eta_final_destination"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@id/eta_next_destination"
+            android:layout_marginLeft="40dp"
             android:text=""
             android:textSize="24sp"/>
 
@@ -278,7 +316,7 @@
             android:id="@+id/remaining_distance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/time_of_arrival"
+            android:layout_below="@id/eta_final_destination"
             android:layout_toRightOf="@+id/stop"
             android:text=""
             android:textSize="18sp"/>
