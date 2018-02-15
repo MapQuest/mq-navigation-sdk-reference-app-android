@@ -1,21 +1,20 @@
 package com.mapquest.navigation.sampleapp.searchahead;
 
 import android.content.Context;
-import android.graphics.Paint;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.AppCompatEditText;
+import android.support.v7.widget.AppCompatImageButton;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
+import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.mapquest.android.commoncore.util.ParamUtil;
 import com.mapquest.navigation.sampleapp.R;
-import com.mapquest.navigation.sampleapp.searchahead.view.MQEditText;
-import com.mapquest.navigation.sampleapp.searchahead.view.FontProvider;
 import com.mapquest.navigation.sampleapp.util.UiUtil;
 
 import butterknife.BindView;
@@ -29,53 +28,50 @@ public class SearchBarView extends LinearLayout implements TextWatcher, TextView
 
     public static final int QUERY_STRING_SIZE_MAX = 100;
 
-    @BindView(R.id.search_ahead_list_item_icon)
-    protected ImageView mTextEntryIcon;
-
     @BindView(R.id.text_entry)
-    protected MQEditText mTextEdit;
+    protected AppCompatEditText mTextEdit;
 
     @BindView(R.id.clear_button)
-    protected TextView mClearButton;
-
-    @BindView(R.id.cancel_button)
-    protected TextView mCancelButton;
+    protected AppCompatImageButton mClearButton;
 
     @OnClick(R.id.clear_button)
     protected void onClearClick() {
         mTextEdit.getText().clear();
-        if (mListener != null) {
-            mListener.onClearClicked();
-        }
     }
 
-    @OnClick(R.id.cancel_button)
-    protected void onCancelClick() {
-        UiUtil.hideKeyboard(mTextEdit);
-        if (mListener != null) {
-            mListener.onCancel();
-        }
-    }
-
-    private SearchBarViewCallbacks mListener;
-
+    @Nullable
+    private SearchBarViewCallbacks mSearchBarViewCallbacks;
+    @Nullable
     private String mText;
 
-    public SearchBarView(Context context, SearchBarViewCallbacks listener) {
-        super(context);
-        ParamUtil.validateParamNotNull(listener);
-        mListener = listener;
-        initialize();
+    public SearchBarView(Context context) {
+        this(context, (AttributeSet) null);
     }
 
-    private void initialize() {
+    public SearchBarView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public SearchBarView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+
         LayoutInflater inflater = (LayoutInflater) getContext()
                 .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View view = inflater.inflate(R.layout.view_search_bar, this, true);
 
         ButterKnife.bind(view, this);
 
-        setSearchIcon();
+        boolean isPlaceHolder = attrs != null && getContext().getTheme()
+                .obtainStyledAttributes(attrs, R.styleable.SearchBarView, 0, 0)
+                .getBoolean(R.styleable.SearchBarView_placeHolder, false);
+
+        // If the view is meant to be a place holder the view should just handle clicks at the root level
+        if (isPlaceHolder) {
+            mTextEdit.setClickable(false);
+            mTextEdit.setFocusable(false);
+            mTextEdit.setMovementMethod(null);
+            mTextEdit.setKeyListener(null);
+        }
 
         mText = "";
 
@@ -88,7 +84,22 @@ public class SearchBarView extends LinearLayout implements TextWatcher, TextView
         mTextEdit.setOnEditorActionListener(this);
 
         view.setBackgroundColor(getResources().getColor(R.color.white));
+    }
 
+    public void setSearchBarViewCallbacks(SearchBarViewCallbacks searchBarViewCallbacks) {
+        mSearchBarViewCallbacks = searchBarViewCallbacks;
+    }
+
+    public void setFocusOnEditText() {
+        UiUtil.showKeyboard(mTextEdit);
+    }
+
+    public void clearSearchField() {
+        mTextEdit.setText("");
+    }
+
+    public String getSearchText() {
+        return mTextEdit.getText().toString();
     }
 
     @Override
@@ -98,18 +109,7 @@ public class SearchBarView extends LinearLayout implements TextWatcher, TextView
 
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        return mListener.onEditorAction(v, actionId, event);
-    }
-
-    private void setSearchIcon() {
-        Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        int primaryThemeColor = getResources().getColor(R.color.black);
-        iconPaint.setTypeface(FontProvider.get().getFont(FontProvider.FontType.SYMBOL));
-        iconPaint.setTextSize(getResources().getDimensionPixelSize(R.dimen.search_icon_text_size));
-        iconPaint.setColor(primaryThemeColor);
-        int size = (int) getResources().getDimension(R.dimen.symbol_size_primary);
-        mTextEntryIcon.setImageDrawable(UiUtil.convertStringToDrawable(getContext(),
-                getContext().getString(R.string.sym_search), iconPaint, size, size));
+        return mSearchBarViewCallbacks != null && mSearchBarViewCallbacks.onEditorAction(v, actionId, event);
     }
 
     @Override
@@ -124,26 +124,16 @@ public class SearchBarView extends LinearLayout implements TextWatcher, TextView
         mText = newText.toString().trim();
 
         updateTextLineUiElements();
-        mListener.onUpdateContentForSearchText(mText);
+        if (mSearchBarViewCallbacks != null) {
+            mSearchBarViewCallbacks.onUpdateContentForSearchText(mText);
+        }
     }
 
     private void updateClearButton() {
         mClearButton.setVisibility(mText.length() > 0 ? View.VISIBLE : View.GONE);
     }
 
-    protected void updateTextLineUiElements() {
+    private void updateTextLineUiElements() {
         updateClearButton();
-    }
-
-    public void setSearchField(String text) {
-        mTextEdit.setText(text);
-        mTextEdit.setSelection(text.length());
-    }
-
-    protected void setTextWithoutSearching(String text) {
-        // set the text, without triggering the listeners
-        mTextEdit.removeTextChangedListener(this);
-        mTextEdit.setText(text);
-        mTextEdit.addTextChangedListener(this);
     }
 }

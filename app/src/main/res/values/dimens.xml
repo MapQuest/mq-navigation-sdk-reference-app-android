@@ -34,23 +34,13 @@
     <dimen name="search_ahead_list_item_icon_secondary_text_size">16sp</dimen>
     <dimen name="search_ahead_clear_button_text_size">34sp</dimen>
     <dimen name="search_ahead_cancel_button_text_size">16sp</dimen>
-
     <dimen name="search_bar_height">54dp</dimen>
     <dimen name="top_bar_rounded_background_corner_radius">17dp</dimen>
-    <dimen name="rounded_layer_button_corner_radius">2dp</dimen>
 
     <dimen name="sym_button_text_size">36dp</dimen>
     <dimen name="search_icon_text_size">32dp</dimen>
     <dimen name="symbol_size_primary">34dp</dimen>
     <dimen name="search_symbol_size">34dp</dimen>
     <dimen name="default_divider_height">1dp</dimen>
-
-    <!-- Session Replay -->
-    <dimen name="session_id_edit_text_height">60dp</dimen>
-    <dimen name="session_id_text_size">24sp</dimen>
-    <dimen name="session_username_text_size">18sp</dimen>
-    <dimen name="recent_sessions_header_elevation">5dp</dimen>
-    <dimen name="recent_sessions_list_elevation_scroll_amount">20dp</dimen>
-    <dimen name="recent_sessions_list_bottom_padding">30dp</dimen>
 
 </resources>

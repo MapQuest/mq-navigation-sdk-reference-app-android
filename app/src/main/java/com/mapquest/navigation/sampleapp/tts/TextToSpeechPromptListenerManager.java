@@ -9,10 +9,8 @@ import android.support.annotation.Nullable;
 
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.internal.util.ArgumentValidator;
+import com.mapquest.navigation.listener.PromptSpeechListener;
 
-/**
- * Manages the TTS PromptListener implementation and handles the Android lifecycle appropriately.
- */
 public class TextToSpeechPromptListenerManager implements LifecycleObserver {
     private static final String GOOGLE_TTS_ENGINE_NAME = "com.google.android.tts";
 
@@ -25,28 +23,30 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
     @Nullable
     private NavigationManager mNavigationManager;
 
-    public TextToSpeechPromptListenerManager(@NonNull Context context, @NonNull Lifecycle lifecycle) {
-        this(lifecycle, new TextToSpeechManager(context.getApplicationContext(), GOOGLE_TTS_ENGINE_NAME));
+    public TextToSpeechPromptListenerManager(@NonNull Context context,
+                                             @NonNull Lifecycle lifecycle,
+                                             String languageTag ) {
+        this(lifecycle, new TextToSpeechManager(context.getApplicationContext(), GOOGLE_TTS_ENGINE_NAME), languageTag);
     }
 
-    /*package*/ TextToSpeechPromptListenerManager(@NonNull Lifecycle lifecycle,
-            @NonNull TextToSpeechManager textToSpeechManager) {
-        this(lifecycle, textToSpeechManager, new TextToSpeechPromptListener(textToSpeechManager));
-    }
-
-    /*package*/ TextToSpeechPromptListenerManager(@NonNull Lifecycle lifecycle,
+    /*package*/ TextToSpeechPromptListenerManager(
+            @NonNull Lifecycle lifecycle,
             @NonNull TextToSpeechManager textToSpeechManager,
-            @NonNull TextToSpeechPromptListener textToSpeechPromptListener) {
+            String languageTag) {
+        this(lifecycle, textToSpeechManager, new TextToSpeechPromptListener(textToSpeechManager), languageTag);
+    }
+
+    /*package*/ TextToSpeechPromptListenerManager(@NonNull Lifecycle lifecycle,
+                                              @NonNull TextToSpeechManager textToSpeechManager,
+                                              @NonNull TextToSpeechPromptListener textToSpeechPromptListener,
+                                              String languageTag) {
         mLifecycle = lifecycle;
         mTextToSpeechManager = textToSpeechManager;
-        mTextToSpeechManager.initialize();
+        mTextToSpeechManager.initialize(languageTag);
         mPromptListener = textToSpeechPromptListener;
         mLifecycle.addObserver(this);
     }
 
-    /**
-     * Sets up the prompt listener on the navigation manager if its at the correct state in the lifecycle.
-     */
     public void initialize(@NonNull NavigationManager navigationManager) {
         ArgumentValidator.assertNotNull(navigationManager);
 
@@ -57,6 +57,10 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
         }
     }
 
+    public void setPromptSpeechListener(@Nullable PromptSpeechListener promptSpeechListener) {
+        mPromptListener.setPromptSpeechListener(promptSpeechListener);
+    }
+
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     /*package*/ void destroy() {
         if (mNavigationManager != null) {
@@ -64,5 +68,6 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
             mNavigationManager = null;
         }
         mTextToSpeechManager.deinitializeImmediately();
+        mPromptListener.setPromptSpeechListener(null);
     }
 }

@@ -3,10 +3,10 @@
               xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="match_parent"
               android:layout_height="@dimen/search_bar_height"
-              android:clickable="true"
-              android:focusable="true"
-              android:focusableInTouchMode="true"
-              android:orientation="horizontal"
+              android:clickable="false"
+              android:focusable="false"
+              android:focusableInTouchMode="false"
+    android:orientation="horizontal"
               android:gravity="center_vertical"
               android:padding="@dimen/small_padding">
 
@@ -23,15 +23,14 @@
 
         <ImageView
             android:id="@+id/search_ahead_list_item_icon"
-            android:layout_width="@dimen/search_symbol_size"
-            android:layout_height="@dimen/search_symbol_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_search_black_24dp"
             android:layout_gravity="center_vertical"
-            android:paddingBottom="@dimen/search_ahead_list_item_icon_bottom_margin"
-            android:paddingLeft="@dimen/search_ahead_list_item_icon_left_padding"
-            android:paddingRight="@dimen/search_ahead_list_item_icon_right_padding"
-            android:scaleType="centerInside" />
+            android:layout_marginRight="8dp"
+            android:layout_marginEnd="8dp"/>
 
-        <com.mapquest.navigation.sampleapp.searchahead.view.MQEditText
+        <android.support.v7.widget.AppCompatEditText
             android:id="@+id/text_entry"
             android:layout_width="0dp"
             android:layout_weight="1"
@@ -43,32 +42,18 @@
             android:imeActionLabel="Search"
             android:imeOptions="actionSearch|flagNoExtractUi"
             android:inputType="textNoSuggestions"
-            android:textCursorDrawable="@drawable/cursor_green"
             android:textColor="@android:color/black"
             android:maxLines="1"/>
 
-        <com.mapquest.navigation.sampleapp.searchahead.view.MQTextView
+        <android.support.v7.widget.AppCompatImageButton
             android:id="@+id/clear_button"
-            style="@style/MQSymbolInactive"
-            android:background="@drawable/borderless_ripple_dark"
-            android:text="@string/sym_close"
-            android:textSize="@dimen/search_ahead_clear_button_text_size" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_close_black_24dp"
+            android:background="#00000000"
+            android:visibility="gone"
+            android:layout_gravity="center_vertical"
+            />
 
     </LinearLayout>
-
-    <com.mapquest.navigation.sampleapp.searchahead.view.MQTextView
-        android:id="@+id/cancel_button"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:gravity="center_vertical"
-        android:paddingLeft="@dimen/small_padding"
-        android:paddingRight="@dimen/small_padding"
-        android:text="@string/cancel"
-        android:textColor="@color/mq_green"
-        android:textSize="@dimen/search_ahead_cancel_button_text_size"
-        app:MQTypeface="semibold"
-        android:visibility="gone"
-        android:background="@drawable/borderless_ripple_light" />
-
 </LinearLayout>
