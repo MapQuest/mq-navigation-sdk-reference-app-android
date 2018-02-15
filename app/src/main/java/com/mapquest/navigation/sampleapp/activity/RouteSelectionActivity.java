@@ -33,6 +33,7 @@ import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMap.OnMapClickListener;
 import com.mapbox.mapboxsdk.maps.MapboxMap.OnMapLongClickListener;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapquest.mapping.maps.RoutePolylinePresenter;
 import com.mapquest.navigation.ShapeSegmenter;
 import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.RouteService;
@@ -75,7 +76,6 @@ import static com.mapquest.navigation.sampleapp.util.ColorUtil.getCongestionColo
 import static com.mapquest.navigation.sampleapp.util.ColorUtil.setOpacity;
 import static com.mapquest.navigation.sampleapp.util.MapUtils.toMapQuestLatLng;
 import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarkerOptions;
-import static com.mapquest.navigation.sampleapp.util.UiUtil.convertStringToDrawable;
 import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class RouteSelectionActivity extends AppCompatActivity
@@ -111,6 +111,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     protected MapView mMap;
 
     private MapboxMap mMapController;
+    private RoutePolylinePresenter mRoutePolylinePresenter;
     private OnMapLongClickListener mMapLongClickListener;
     private ProgressDialog mRoutingDialog;
 
@@ -138,7 +139,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     private List<Marker> mDestinationMarkers = new ArrayList<>();
 
     private RouteService mRouteService;
-    private Map<Route, Set<Polyline>> mRoutePolylineSetsByRoute = new HashMap<>();
+    private Map<Route, List<PolylineOptions>> mRoutePolylineOptionsListByRoute = new HashMap<>();
     private Route mSelectedRoute;
 
     private MQNavigationSampleApplication mApp;
@@ -179,6 +180,7 @@ public class RouteSelectionActivity extends AppCompatActivity
             @Override
             public void onMapReady(final MapboxMap mapController) {
                 mMapController = mapController;
+                mRoutePolylinePresenter = new RoutePolylinePresenter(mMap, mMapController);
                 initGpsButton();
 
                 // note: regular click on map will select a *route* to navigate
@@ -221,7 +223,6 @@ public class RouteSelectionActivity extends AppCompatActivity
             }
         });
         mFollowUserLocationListener = new FollowUserLocationListener();
-        mMap.onStart();
 
         clearMappedRoutes();
         for (Marker marker : mDestinationMarkers) {
@@ -366,7 +367,7 @@ public class RouteSelectionActivity extends AppCompatActivity
         Log.d(TAG, "onStart()");
         super.onStart();
 
-        // mMap.onStart();
+         mMap.onStart();
     }
 
     @Override
@@ -485,7 +486,7 @@ public class RouteSelectionActivity extends AppCompatActivity
         mRouteService = NavigationRouteServiceFactory.getNavigationRouteService(getApplicationContext(), BuildConfig.API_KEY);
         RouteOptions routeOptions = new RouteOptions.Builder()
                 .systemOfMeasurementForDisplayText(SystemOfMeasurement.UNITED_STATES_CUSTOMARY) // or specify METRIC
-                .language("es_US") // NOTE: alternately, specify "es_US" for Spanish in the US
+                .language("en_US") // NOTE: alternately, specify "es_US" for Spanish in the US
                 .build();
 
         try {
@@ -498,36 +499,38 @@ public class RouteSelectionActivity extends AppCompatActivity
     private void mapRoutes(Iterable<Route> routes, Route selectedRoute) {
         clearMappedRoutes();
         for (Route route : routes) {
-            Set<Polyline> routeSegmentPolylines = route.equals(selectedRoute) ?
+            List<PolylineOptions> routeSegmentPolylines = route.equals(selectedRoute) ?
                     mapRoute(route, SELECTED_ROUTE_WIDTH, SELECTED_ROUTE_OPACITY) :
                     mapRoute(route, DEFAULT_ROUTE_WIDTH, DEFAULT_ROUTE_OPACITY);
 
-            mRoutePolylineSetsByRoute.put(route, routeSegmentPolylines);
+            mRoutePolylineOptionsListByRoute.put(route, routeSegmentPolylines);
         }
     }
 
-    private Set<Polyline> mapRoute(Route route, float lineWidth, float lineOpacity) {
+    private List<PolylineOptions> mapRoute(Route route, float lineWidth, float lineOpacity) {
 
-        Set<Polyline> polylines = new HashSet<>();
+        List<PolylineOptions> polylinesOptionsList = new ArrayList<>();
         for (RouteLeg routeLeg: route.getLegs()) {
-            polylines.addAll(mapLeg(routeLeg, lineWidth, lineOpacity));
+            polylinesOptionsList.addAll(mapLeg(routeLeg, lineWidth, lineOpacity));
         }
-        return polylines;
+        return polylinesOptionsList;
     }
 
-    private Set<Polyline> mapLeg(RouteLeg leg, float lineWidth, float lineOpacity) {
+    private List<PolylineOptions> mapLeg(RouteLeg leg, float lineWidth, float lineOpacity) {
 
         List<SpanPathPair<CongestionSpan>> segments = new ShapeSegmenter.Builder().build()
                 .segmentPath(leg.getShape(), leg.getTraffic().getConditions());
 
-        Set<Polyline> polylines = new HashSet<>();
+        List<PolylineOptions> polylinesList = new ArrayList<>();
         for (SpanPathPair<CongestionSpan> segment : segments) {
-            polylines.add(mMapController.addPolyline(buildSegmentPolylineOptions(
+            PolylineOptions polylineOptions = buildSegmentPolylineOptions(
                     segment.getShapeCoordinates(),
                     setOpacity(getCongestionColor(segment.getSpan()), lineOpacity),
-                    lineWidth)));
+                    lineWidth);
+            polylinesList.add(polylineOptions);
+            mRoutePolylinePresenter.addPolyline(polylineOptions);
         }
-        return polylines;
+        return polylinesList;
     }
 
     private PolylineOptions buildSegmentPolylineOptions(List<Coordinate> path, int color, float width) {
@@ -542,13 +545,13 @@ public class RouteSelectionActivity extends AppCompatActivity
     }
 
     private void clearMappedRoutes() {
-        for (Set<Polyline> polylines : mRoutePolylineSetsByRoute.values()) {
-            for (Polyline polyline : polylines) {
-                mMapController.removePolyline(polyline);
+        for (List<PolylineOptions> polylineOptionsList : mRoutePolylineOptionsListByRoute.values()) {
+            for (PolylineOptions polylineOptions : polylineOptionsList) {
+                mRoutePolylinePresenter.removePolyline(polylineOptions);
             }
         }
 
-        mRoutePolylineSetsByRoute.clear();
+        mRoutePolylineOptionsListByRoute.clear();
     }
 
     private ProgressDialog displayProgressDialog(String title, String message) {
@@ -610,11 +613,10 @@ public class RouteSelectionActivity extends AppCompatActivity
     private class RouteClickListener implements OnMapClickListener {
         @Override
         public void onMapClick(@NonNull LatLng latLng) {
-
-            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineOptionsListByRoute.keySet());
             setSelectedRoute(findNearestRoute(drawnRoutes, toCoordinate(latLng)));
 
-//            List<Route> routes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+//            List<Route> routes = new ArrayList<>(mRoutePolylineOptionsListByRoute.keySet());
 //            clearMappedRoutes();
 //
 //            mSelectedRoute = findNearestRoute(routes, toCoordinate(latLng));
@@ -638,7 +640,7 @@ public class RouteSelectionActivity extends AppCompatActivity
             mSelectedRoute = selectedRoute;
 
             // re-draw routes; highlighting the selected-route
-            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineSetsByRoute.keySet());
+            List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineOptionsListByRoute.keySet());
             clearMappedRoutes();
 
             // note: move selected-route to the end, so that it gets drawn on top of the rest

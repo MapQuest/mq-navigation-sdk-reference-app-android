@@ -20,9 +20,13 @@ Version 3 of the Mapquest Navigation SDK is a ground-up rewrite aimed at creatin
 - Android Sample App
 - API Documentation (javadoc)
 
-----
-
 ## Release Notes
+
+### MQNavigation 3.2.2 (Android)
+#### Notable Updates
+- Multi-Stop Routes: SDK now supports navigation of a route with more than one destination (i.e. multiple "route legs")
+- Destination Reached: per the above, the onDestinationReached listener method in NavigationProgressListener has changed; also now has DestinationAcceptanceHandler used to determine navigation behavior between route-legs
+- Language Option: the language used for all "text" portions (i.e. maneuver text, spoken prompts) of the routes returned from the NavigationRouteService can now also be specified as an option
 
 ### MQNavigation 3.1.2 (Android)
 #### Notable Updates
@@ -44,7 +48,6 @@ Version 3 of the Mapquest Navigation SDK is a ground-up rewrite aimed at creatin
 - **Unoptimized ETA** - In some traffic conditions, ETAs can appear low compared to the true travel time.
 - **Indirect routes on reroute** - In certain conditions where user is sitting in traffic near a turn and a reroute occurs, a sub-optimal route may be returned with extra turns.
 
-----
 ### MQNavigation 3.0.0 (Android)
 #### Notable Updates
 - Added a property ‘name’ to MQRoute
