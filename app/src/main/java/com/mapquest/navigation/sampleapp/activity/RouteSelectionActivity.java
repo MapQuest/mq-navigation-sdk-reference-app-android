@@ -485,7 +485,7 @@ public class RouteSelectionActivity extends AppCompatActivity
         mRouteService = NavigationRouteServiceFactory.getNavigationRouteService(getApplicationContext(), BuildConfig.API_KEY);
         RouteOptions routeOptions = new RouteOptions.Builder()
                 .systemOfMeasurementForDisplayText(SystemOfMeasurement.UNITED_STATES_CUSTOMARY) // or specify METRIC
-                .language("es_US") // NOTE: alternately, specify "es_US" for Spanish in the US
+                .language("en_US") // NOTE: alternately, specify "es_US" for Spanish in the US
                 .build();
 
         try {
