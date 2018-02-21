@@ -231,6 +231,13 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
+    @OnClick(R.id.skipLegIcon)
+    void handleSkipToNextLegClick() {
+        mNavigationManager.advanceRouteToNextLeg();
+        showSkipLegButton(!isNavigatingFinalRouteLeg());
+    }
+
+
     @BindView(R.id.follow)
     protected TextView mFollowButton;
     private boolean mFollowing;
@@ -548,16 +555,6 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void restoreMap(final MapView map) {
-        map.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(final MapboxMap mapController) {
-                mMapController = mapController;
-                map.setOnTouchListener(new FollowModeExitingMapTouchListener());
-            }
-        });
-    }
-
     @OnClick(R.id.follow)
     protected synchronized void enterFollowMode() {
         Log.d(TAG, "enterFollowMode() mFollowing: " + mFollowing);
@@ -718,8 +715,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             mNextManeuverLabel.setText("");
         } else {
             String labelText = ((maneuver.getName() != null) && !maneuver.getName().trim().isEmpty()) ?
-                    maneuver.getTypeText().toLowerCase() + ", " + maneuver.getName() :
-                    maneuver.getTypeText().toLowerCase();
+                    maneuver.getTypeText() + ", " + maneuver.getName() :
+                    maneuver.getTypeText();
             mNextManeuverLabel.setText(labelText);
         }
     }
@@ -823,7 +820,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     private boolean isNavigatingFinalRouteLeg() {
         Route currentRoute = mNavigationManager.getRoute();
         int currentLegIndex = currentRoute.getLegs().indexOf(mNavigationManager.getCurrentRouteLeg());
-        return (currentLegIndex < (currentRoute.getLegs().size() - 1));
+        return currentLegIndex >= (currentRoute.getLegs().size() - 1);
     }
 
     private void showSkipLegButton(boolean enabled) {
@@ -862,6 +859,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             updateRouteUi(mNavigationManager.getRoute());
 
             updateStatusLabel("Starting");
+
+            showSkipLegButton(!isNavigatingFinalRouteLeg());
         }
 
         @Override
