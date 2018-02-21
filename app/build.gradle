@@ -46,7 +46,7 @@ dependencies {
     compile('com.mapzen.android:lost:3.0.2')          // used for Location Acquisition (GPS)
 
     // note: the MapQuest Mapping SDK (i.e. "MapView") used to display our route to navigate
-    compile('com.mapquest:mapping-android-sdk:1.6.3') {
+    compile('com.mapquest:mapping-android-sdk:2.0.1') {
         exclude group: 'com.android.support'
     }
 

@@ -33,9 +33,10 @@ import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapquest.mapping.maps.MapView;
-import com.mapquest.mapping.maps.MapboxMap;
-import com.mapquest.mapping.maps.OnMapReadyCallback;
+import com.mapquest.mapping.maps.RoutePolylinePresenter;
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.ShapeSegmenter;
 import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
@@ -122,7 +123,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     private static NavigationManager mNavigationManager;
     private LocationProviderAdapter mLocationProviderAdapter;
 
-    private List<Polyline> mRoutePolylines = new ArrayList<>();
+    private List<PolylineOptions> mRoutePolylineOptionsList = new ArrayList<>();
     private Marker mRouteStartMarker;
     private Marker mRouteEndMarker;
     private Marker mClosestRoutePointMarker;
@@ -143,6 +144,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     @BindView(R.id.map)
     protected MapView mMap;
     private MapboxMap mMapController;
+    private RoutePolylinePresenter mRoutePolylinePresenter;
 
     private NarrativeAdapter mDirectionsListAdapter;
 
@@ -260,6 +262,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             public void onMapReady(final MapboxMap mapController) {
                 // once MapView is ready...
                 mMapController = mapController;
+                mRoutePolylinePresenter = new RoutePolylinePresenter(mMap, mMapController);
                 mMap.setOnTouchListener(new FollowModeExitingMapTouchListener());
 
                 setZoomLevel(16);
@@ -514,7 +517,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         for(SpanPathPair<CongestionSpan> segment : segments) {
             int color = getCongestionColor(segment.getSpan());
 
-            mRoutePolylines.add(mapPathSegment(segment.getShapeCoordinates(), color, PATH_WIDTH));
+            PolylineOptions polylineOptions = mapPathSegment(segment.getShapeCoordinates(), color, PATH_WIDTH);
+            mRoutePolylineOptionsList.add(polylineOptions);
         }
     }
 
@@ -633,7 +637,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private Polyline mapPathSegment(List<Coordinate> path, int color, int lineWidth) {
+    private PolylineOptions mapPathSegment(List<Coordinate> path, int color, int lineWidth) {
         PolylineOptions options = new PolylineOptions();
         options.color(color);
         options.width(lineWidth);
@@ -641,7 +645,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         for(Coordinate point : path) {
             options.add(toLatLng(point));
         }
-        return mMapController.addPolyline(options);
+        mRoutePolylinePresenter.addPolyline(options);
+        return options;
     }
 
     private void clearClosestRoutePointMarker() {
@@ -677,9 +682,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         if(mMapController == null) {
             return;
         }
-        for(Polyline polyline : new ArrayList<>(mRoutePolylines)) {
-            mMapController.removePolyline(polyline);
-            mRoutePolylines.remove(polyline);
+        for(PolylineOptions polylineOptions : new ArrayList<>(mRoutePolylineOptionsList)) {
+            mRoutePolylinePresenter.removePolyline(polylineOptions);
+            mRoutePolylineOptionsList.remove(polylineOptions);
         }
     }
 
