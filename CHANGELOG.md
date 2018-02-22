@@ -1,6 +1,16 @@
-## MQNavigation: Change Log
+## MapQuest Navigation SDK and Sample App: Change Log
 
 ### Sample App
+
+#### 3.2.2
+
+* NavSDK Update: updated to use v3.2.2 of the MQ Navigation SDK
+* Dependency Updates: also updated to use v2.0.4 of the MQ MappingSDK for the MapView; and v3.0.4 of MapZen Lost (for GPS Location)
+* Multi-Stop Route Support: updated to allow creation (and arrival handling) for new "multi-stop" routes; i.e. a route with more than one destination
+* Advance to Next Route Leg: added button to allow user to "advance" to the next route-leg (when navigating a multi-stop route)
+* Pause/Resume Navigation: added UI to control navigation per these new NavigationManager API methods
+* Language Option: specify US English as the language option, but show how to specify, say, "US Spanish" as an option
+* Search Ahead Feature: simplified the implementation of this MapQuest feature in sample app
 
 #### 3.1.2
 
@@ -20,10 +30,17 @@
 
 #### 3.0.0
 
-- Sample App version for initial release.
+* Sample App version for initial release
 
-----
-### MQNavigation SDK
+
+
+### MapQuest Navigation SDK
+
+#### 3.2.2
+
+* Multi-Stop Routes: SDK now supports navigation of a route with more than one destination (i.e. multiple "route legs")
+* Destination Reached: per the above, the onDestinationReached listener method in NavigationProgressListener has changed; also now has DestinationAcceptanceHandler used to determine navigation behavior between route-legs
+* Language Option: the language used for all "text" portions (i.e. maneuver text, spoken prompts) of the routes returned from the NavigationRouteService can now also be specified as an option
 
 #### 3.1.0
 
