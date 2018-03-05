@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -94,6 +95,9 @@ public class RouteSelectionActivity extends AppCompatActivity
     private static final float SELECTED_ROUTE_OPACITY = 1.00f;
 
     private static final String SEARCH_AHEAD_FRAGMENT_TAG = "tag_search_ahead_fragment";
+
+    private static final String SHARED_PREFERENCE_NAME = "com.mapquest.navigation.sampleapp.activity.RouteSelectionActivity";
+    private static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
 
     @BindView(R.id.start)
     protected Button mStartButton;
@@ -412,7 +416,37 @@ public class RouteSelectionActivity extends AppCompatActivity
     protected void startNavigationActivity() {
         mRouteNameTextView.setVisibility(View.GONE);
 
-        NavigationActivity.start(this, mSelectedRoute);
+        final SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFERENCE_NAME, MODE_PRIVATE);
+        if (sharedPreferences.contains(USER_TRACKING_CONSENT_KEY)) {
+            boolean userGrantedLocationTrackingConsent = sharedPreferences.getBoolean(USER_TRACKING_CONSENT_KEY, false);
+            NavigationActivity.start(this, mSelectedRoute, userGrantedLocationTrackingConsent);
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.user_tracking_consent_dialog_title)
+                    .setMessage(R.string.user_tracking_consent_dialog_message)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.user_tracking_consent_dialog_positive_button_text,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    sharedPreferences.edit()
+                                            .putBoolean(USER_TRACKING_CONSENT_KEY, true)
+                                            .apply();
+                                    NavigationActivity.start(RouteSelectionActivity.this, mSelectedRoute, true);
+                                }
+                            })
+                    .setNegativeButton(R.string.user_tracking_consent_dialog_negative_button_text,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    sharedPreferences.edit()
+                                            .putBoolean(USER_TRACKING_CONSENT_KEY, false)
+                                            .apply();
+                                    NavigationActivity.start(RouteSelectionActivity.this, mSelectedRoute, false);
+                                }
+                            })
+                    .show();
+        }
     }
 
     private void acquireCurrentLocationAndZoom(final MapboxMap mapController) {

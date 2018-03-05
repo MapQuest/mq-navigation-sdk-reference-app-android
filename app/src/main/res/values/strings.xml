@@ -28,4 +28,9 @@
     <string name="asset_font_filename_mapquest_weather_icons">fonts/MapQuestWeatherIcons-1.0.3.otf</string>
     <string name="asset_font_filename_regular">fonts/raleway-regular-webfont.ttf</string>
     <string name="asset_font_filename_semibold">fonts/raleway-semibold-webfont.ttf</string>
+
+    <string name="user_tracking_consent_dialog_title">Allow MapQuest to collect data?</string>
+    <string name="user_tracking_consent_dialog_message">MapQuest uses location data to provide its services and may collect location information even when the app is not in use. This information will be used, to enhance location-based services and experiences supported by Verizon (including MapQuest and Oath). \n MapQuest may collect location information even when the app is not in use. This information will be used, with your permission, to enhance location-based services and experiences supported by Verizon (including MapQuest and Oath).</string>
+    <string name="user_tracking_consent_dialog_negative_button_text">No</string>
+    <string name="user_tracking_consent_dialog_positive_button_text">Yes</string>
 </resources>

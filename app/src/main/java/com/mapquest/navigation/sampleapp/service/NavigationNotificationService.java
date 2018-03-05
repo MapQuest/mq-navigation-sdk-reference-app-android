@@ -14,6 +14,7 @@ import android.util.Log;
 
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.location.LocationProviderAdapter;
+import com.mapquest.navigation.model.UserLocationTrackingConsentStatus;
 import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
 import com.mapquest.navigation.sampleapp.R;
@@ -35,7 +36,10 @@ public class NavigationNotificationService extends Service implements LifecycleR
 
     private IBinder mBinder = new LocalBinder();
     private NavigationManager mNavigationManager;
+
     private String mLanguageCode;
+    private boolean mUserConsentGranted = false;
+
     private Route mRoute;
 
     private TextToSpeechPromptListenerManager mTextToSpeechPromptListenerManager;
@@ -47,6 +51,7 @@ public class NavigationNotificationService extends Service implements LifecycleR
 
         if (intent.getExtras() != null) {
             mLanguageCode = intent.getExtras().getString(NAVIGATION_LANGUAGE_CODE_KEY);
+            mUserConsentGranted = intent.getExtras().getBoolean(NavigationActivity.USER_TRACKING_CONSENT_KEY);
         }
 
         // instantiate the TTS manager (and engine) here using the provided language tag
@@ -136,6 +141,10 @@ public class NavigationNotificationService extends Service implements LifecycleR
         ((NavigationManagerImpl) mNavigationManager).addNavigationLifecycleEventListener(
                 new NotificationUpdatingNavigationLifecycleEventListener());
 
+        UserLocationTrackingConsentStatus userLocationTrackingConsentStatus = mUserConsentGranted ?
+                UserLocationTrackingConsentStatus.GRANTED : UserLocationTrackingConsentStatus.DENIED;
+        mNavigationManager.setUserLocationTrackingConsentStatus(userLocationTrackingConsentStatus);
+
         return mNavigationManager;
     }
 
@@ -202,6 +211,7 @@ public class NavigationNotificationService extends Service implements LifecycleR
 
         Intent navigationActivityIntent = new Intent(this, NavigationActivity.class);
         navigationActivityIntent.putExtra(NavigationActivity.ROUTE_KEY, mRoute);
+        navigationActivityIntent.putExtra(NavigationActivity.USER_TRACKING_CONSENT_KEY, mUserConsentGranted);
         navigationActivityIntent.setAction("Notification"); // This is necessary for passing along the extras set above
 
         return PendingIntent.getActivity(this, 0, navigationActivityIntent, 0);

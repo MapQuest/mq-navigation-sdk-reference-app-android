@@ -104,6 +104,7 @@ import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 public class NavigationActivity extends AppCompatActivity implements LifecycleRegistryOwner {
 
     public static final String ROUTE_KEY = "route";
+    public static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
 
     private static final String TAG = LogUtil.generateLoggingTag(NavigationActivity.class);
     private static final int PATH_WIDTH = 5;
@@ -249,6 +250,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     private boolean mShouldRestoreFollowMode;
     private LocationObservation mLastLocationObservation;
+    private boolean mUserTrackingConsentGranted;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -256,6 +258,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
         if (getIntent().getExtras() != null) {
             mRoute = getIntent().getExtras().getParcelable(ROUTE_KEY);
+            mUserTrackingConsentGranted = getIntent().getExtras().getBoolean(USER_TRACKING_CONSENT_KEY);
         }
         mShouldRestoreFollowMode = (savedInstanceState == null) || savedInstanceState.getBoolean(FOLLOWING_KEY);
 
@@ -382,6 +385,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         if (mRoute != null) {
             mServiceIntent.putExtra(NavigationNotificationService.NAVIGATION_LANGUAGE_CODE_KEY, mRoute.getRouteOptions().getLanguage());
         }
+        mServiceIntent.putExtra(USER_TRACKING_CONSENT_KEY, mUserTrackingConsentGranted);
+
         startService(mServiceIntent); // note: we both start *and* bind to svc to keep it running even if activity is killed
         bindService(mServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
@@ -747,9 +752,10 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         return new LatLng(coordinate.getLatitude(), coordinate.getLongitude());
     }
 
-    public static void start(Context activity, Route route) {
+    public static void start(Context activity, Route route, Boolean userGrantedLocationTrackingConsent) {
         Intent intent = new Intent(activity, NavigationActivity.class);
         intent.putExtra(ROUTE_KEY, route);
+        intent.putExtra(USER_TRACKING_CONSENT_KEY, userGrantedLocationTrackingConsent);
         activity.startActivity(intent);
     }
 
