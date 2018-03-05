@@ -4,7 +4,6 @@ package com.mapquest.navigation.sampleapp.tts;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.mapquest.navigation.listener.DefaultSpeechListener;
 import com.mapquest.navigation.listener.PromptListener;
 import com.mapquest.navigation.listener.PromptSpeechListener;
 import com.mapquest.navigation.model.Prompt;
@@ -47,5 +46,5 @@ public class TextToSpeechPromptListener implements PromptListener {
     }
 
     @Override
-    public void cancelPrompts() {}
+    public void onShouldCancelPrompts() {}
 }

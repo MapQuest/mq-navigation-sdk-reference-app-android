@@ -4,8 +4,6 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 
-import com.mapquest.navigation.listener.SpeechListener;
-
 import java.util.HashMap;
 import java.util.Map;
 

@@ -34,8 +34,6 @@ import com.mapbox.mapboxsdk.maps.MapboxMap.OnMapClickListener;
 import com.mapbox.mapboxsdk.maps.MapboxMap.OnMapLongClickListener;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapquest.mapping.maps.RoutePolylinePresenter;
-import com.mapquest.navigation.ShapeSegmenter;
-import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.RouteService;
 import com.mapquest.navigation.dataclient.listener.RoutesResponseListener;
 import com.mapquest.navigation.internal.ShapeCalculator;
@@ -59,6 +57,8 @@ import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragment;
 import com.mapquest.navigation.sampleapp.searchahead.SearchBarView;
 import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
 import com.mapquest.navigation.sampleapp.util.LocationUtil;
+import com.mapquest.navigation.util.ShapeSegmenter;
+import com.mapquest.navigation.util.ShapeSegmenter.SpanPathPair;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -450,7 +450,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 });
     }
 
-    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingLocation, final List<Coordinate> destinationLocations) {
+    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingCoordinate, final List<Coordinate> destinationCoordinates) {
         RoutesResponseListener responseListener = new RoutesResponseListener() {
             @Override
             public void onRequestMade() {
@@ -490,7 +490,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 .build();
 
         try {
-            mRouteService.requestRoutes(startingLocation, destinationLocations, routeOptions, responseListener);
+            mRouteService.requestRoutesForCoordinates(startingCoordinate, destinationCoordinates, routeOptions, responseListener);
         } catch (IllegalArgumentException e) {
             toast(RouteSelectionActivity.this, e.getLocalizedMessage());
         }

@@ -38,8 +38,6 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapquest.mapping.maps.MapView;
 import com.mapquest.mapping.maps.RoutePolylinePresenter;
 import com.mapquest.navigation.NavigationManager;
-import com.mapquest.navigation.ShapeSegmenter;
-import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.listener.RouteResponseListener;
 import com.mapquest.navigation.dataclient.listener.TrafficResponseListener;
 import com.mapquest.navigation.internal.NavigationManagerImpl;
@@ -67,6 +65,7 @@ import com.mapquest.navigation.model.SpeedLimitSpan;
 import com.mapquest.navigation.model.SystemOfMeasurement;
 import com.mapquest.navigation.model.Traffic;
 import com.mapquest.navigation.model.location.Coordinate;
+import com.mapquest.navigation.model.location.Destination;
 import com.mapquest.navigation.model.location.Location;
 import com.mapquest.navigation.model.location.LocationObservation;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
@@ -78,6 +77,8 @@ import com.mapquest.navigation.sampleapp.view.DirectionsListAdapter;
 import com.mapquest.navigation.sampleapp.view.LaneGuidanceBar;
 import com.mapquest.navigation.sampleapp.view.ManeuverApproachBar;
 import com.mapquest.navigation.sampleapp.view.NarrativeAdapter;
+import com.mapquest.navigation.util.ShapeSegmenter;
+import com.mapquest.navigation.util.ShapeSegmenter.SpanPathPair;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -972,7 +973,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
 
         @Override
-        public void onDestinationReached(boolean isFinalDestination, @NonNull RouteLeg routeLegCompleted, @NonNull final DestinationAcceptanceHandler destinationAcceptanceHandler) {
+        public void onDestinationReached(@NonNull Destination destination, boolean isFinalDestination,
+                @NonNull RouteLeg routeLegCompleted,
+                @NonNull final DestinationAcceptanceHandler destinationAcceptanceHandler) {
             if (!isFinalDestination) {
 
                 final AlertDialog alertDialog = new AlertDialog.Builder(NavigationActivity.this)
