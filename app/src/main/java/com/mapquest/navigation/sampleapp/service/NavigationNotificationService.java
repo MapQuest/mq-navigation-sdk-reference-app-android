@@ -21,7 +21,6 @@ import com.mapquest.navigation.model.UserLocationTrackingConsentStatus;
 import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
 import com.mapquest.navigation.sampleapp.R;
-import com.mapquest.navigation.sampleapp.activity.NavigationActivity;
 import com.mapquest.navigation.sampleapp.tts.TextToSpeechPromptListenerManager;
 import com.mapquest.navigation.internal.NavigationManagerImpl;
 import com.mapquest.navigation.internal.util.LogUtil;
@@ -45,20 +44,20 @@ public class NavigationNotificationService extends Service implements LifecycleR
     private String mLanguageCode;
     private boolean mUserTrackingConsentGranted = false;
 
-    private Intent mNotificationIntent;
+    private PendingIntent mNotificationContentIntent;
 
     private TextToSpeechPromptListenerManager mTextToSpeechPromptListenerManager;
     private LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);
 
     public static Intent buildNavigationNotificationServiceIntent(@NonNull Context context,
-            @Nullable String languageCode, boolean userTrackingConsentGranted, @NonNull Intent notificationIntent) {
-        ArgumentValidator.assertNotNull(context, notificationIntent);
+            @Nullable String languageCode, boolean userTrackingConsentGranted, @NonNull PendingIntent notificationContentIntent) {
+        ArgumentValidator.assertNotNull(context, notificationContentIntent);
 
         Intent navigationNotificationServiceIntent = new Intent(context, NavigationNotificationService.class);
 
         navigationNotificationServiceIntent.putExtra(NAVIGATION_LANGUAGE_CODE_KEY, languageCode);
         navigationNotificationServiceIntent.putExtra(USER_TRACKING_CONSENT_KEY, userTrackingConsentGranted);
-        navigationNotificationServiceIntent.putExtra(NOTIFICATION_CONTENT_INTENT_KEY, notificationIntent);
+        navigationNotificationServiceIntent.putExtra(NOTIFICATION_CONTENT_INTENT_KEY, notificationContentIntent);
 
         return navigationNotificationServiceIntent;
     }
@@ -70,7 +69,7 @@ public class NavigationNotificationService extends Service implements LifecycleR
         if (intent.getExtras() != null) {
             mLanguageCode = intent.getExtras().getString(NAVIGATION_LANGUAGE_CODE_KEY);
             mUserTrackingConsentGranted = intent.getExtras().getBoolean(USER_TRACKING_CONSENT_KEY);
-            mNotificationIntent = (Intent) intent.getExtras().get(NOTIFICATION_CONTENT_INTENT_KEY);
+            mNotificationContentIntent = (PendingIntent) intent.getExtras().get(NOTIFICATION_CONTENT_INTENT_KEY);
         }
 
         // instantiate the TTS manager (and engine) here using the provided language tag
@@ -211,15 +210,12 @@ public class NavigationNotificationService extends Service implements LifecycleR
 
     private Notification buildNotification(String description) {
 
-        PendingIntent notificationContentIntent = PendingIntent
-                .getActivity(this, 0, mNotificationIntent, 0);
-
         return new Notification.Builder(this)
                 .setOngoing(true)
                 .setContentTitle("Navigating")
                 .setContentText(description)
                 .setSmallIcon(R.drawable.circle)
-                .setContentIntent(notificationContentIntent)
+                .setContentIntent(mNotificationContentIntent)
                 .build();
     }
 }

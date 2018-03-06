@@ -1,5 +1,6 @@
 package com.mapquest.navigation.sampleapp.activity;
 
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.arch.lifecycle.LifecycleRegistry;
 import android.arch.lifecycle.LifecycleRegistryOwner;
@@ -380,9 +381,15 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             }
         };
 
+        Intent navigationActivityIntent = buildNavigationActivityIntent(getApplicationContext(), mRoute,
+                mUserTrackingConsentGranted);
+
+        PendingIntent notificationContentIntent = PendingIntent.getActivity(getApplicationContext(),
+                0, navigationActivityIntent, 0);
+
         Intent serviceIntent = NavigationNotificationService.buildNavigationNotificationServiceIntent(
                 getApplicationContext(), route.getRouteOptions().getLanguage(), mUserTrackingConsentGranted,
-                buildNavigationActivityIntent(getApplicationContext(), mRoute, mUserTrackingConsentGranted));
+                notificationContentIntent);
 
         startService(serviceIntent); // note: we both start *and* bind to svc to keep it running even if activity is killed
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
