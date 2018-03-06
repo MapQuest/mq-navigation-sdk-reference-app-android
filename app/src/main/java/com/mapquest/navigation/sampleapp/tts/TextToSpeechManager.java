@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.FloatRange;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.mapquest.navigation.internal.util.ArgumentValidator;
@@ -61,7 +62,7 @@ public class TextToSpeechManager {
         mPreferredTtsEngineName = preferredTtsEngineName;
     }
 
-    public synchronized void initialize(final String languageTag) {
+    public synchronized void initialize(@Nullable final String languageTag) {
         if(mTextToSpeech != null) {
             Log.w(TAG, "Ignoring request to initialize when already initialized.");
             return;

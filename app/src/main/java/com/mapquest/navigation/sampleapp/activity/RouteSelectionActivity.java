@@ -419,7 +419,12 @@ public class RouteSelectionActivity extends AppCompatActivity
         final SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFERENCE_NAME, MODE_PRIVATE);
         if (sharedPreferences.contains(USER_TRACKING_CONSENT_KEY)) {
             boolean userGrantedLocationTrackingConsent = sharedPreferences.getBoolean(USER_TRACKING_CONSENT_KEY, false);
-            NavigationActivity.start(this, mSelectedRoute, userGrantedLocationTrackingConsent);
+
+            Intent navigationActivityIntent = NavigationActivity
+                    .buildNavigationActivityIntent(this, mSelectedRoute, userGrantedLocationTrackingConsent);
+
+            startActivity(navigationActivityIntent);
+
         } else {
             new AlertDialog.Builder(this)
                     .setTitle(R.string.user_tracking_consent_dialog_title)
@@ -432,7 +437,13 @@ public class RouteSelectionActivity extends AppCompatActivity
                                     sharedPreferences.edit()
                                             .putBoolean(USER_TRACKING_CONSENT_KEY, true)
                                             .apply();
-                                    NavigationActivity.start(RouteSelectionActivity.this, mSelectedRoute, true);
+
+                                    Intent navigationActivityIntent = NavigationActivity
+                                            .buildNavigationActivityIntent(RouteSelectionActivity.this,
+                                                    mSelectedRoute, true);
+
+                                    startActivity(navigationActivityIntent);
+
                                 }
                             })
                     .setNegativeButton(R.string.user_tracking_consent_dialog_negative_button_text,
@@ -442,7 +453,12 @@ public class RouteSelectionActivity extends AppCompatActivity
                                     sharedPreferences.edit()
                                             .putBoolean(USER_TRACKING_CONSENT_KEY, false)
                                             .apply();
-                                    NavigationActivity.start(RouteSelectionActivity.this, mSelectedRoute, false);
+
+                                    Intent navigationActivityIntent = NavigationActivity
+                                            .buildNavigationActivityIntent(RouteSelectionActivity.this,
+                                                    mSelectedRoute, false);
+
+                                    startActivity(navigationActivityIntent);
                                 }
                             })
                     .show();
