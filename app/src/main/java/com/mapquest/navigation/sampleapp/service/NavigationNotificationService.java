@@ -1,6 +1,8 @@
 package com.mapquest.navigation.sampleapp.service;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.arch.lifecycle.Lifecycle;
@@ -12,6 +14,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.mapquest.navigation.NavigationManager;
@@ -37,6 +40,8 @@ public class NavigationNotificationService extends Service implements LifecycleR
 
     private static final String TAG = LogUtil.generateLoggingTag(NavigationNotificationService.class);
     private static final int NOTIFICATION_ID = 1;
+    private static final String NOTIFICATION_CHANNEL_ID = "nav-channel-id";
+    private static final String NOTIFICATION_CHANNEL_NAME = "Navigation";
 
     private IBinder mBinder = new LocalBinder();
     private NavigationManager mNavigationManager;
@@ -104,6 +109,14 @@ public class NavigationNotificationService extends Service implements LifecycleR
     public void onCreate() {
         super.onCreate();
         mLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+            int importance = NotificationManager.IMPORTANCE_LOW;
+            NotificationChannel mChannel = new NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, importance);
+            notificationManager.createNotificationChannel(mChannel);
+        }
     }
 
     @Override
@@ -209,8 +222,7 @@ public class NavigationNotificationService extends Service implements LifecycleR
     }
 
     private Notification buildNotification(String description) {
-
-        return new Notification.Builder(this)
+        return new NotificationCompat.Builder(getApplicationContext(), NOTIFICATION_CHANNEL_ID)
                 .setOngoing(true)
                 .setContentTitle("Navigating")
                 .setContentText(description)
