@@ -43,6 +43,7 @@ A network request is made to the MapQuest `RouteService` with these coordinates 
 
 One or more alternate `Routes` are returned from the `RouteService`, and these are plotted on the `MapView`. The user chooses one desired `Route` to navigate -- this is passed along to the `NavigationActivity` to start navigation (using the `NavigationManager`).
 
+Before a route is passed to the `NavigationActivity` we present a UI Dialog to get the users consent for traffic data collection. This value is then used to call `NavigationManager.setUserLocationTrackingConsentStatus()` with the correct `UserLocationTrackingConsentStatus` value. Setting this value is required before a route can be started.
 
 ##### NavigationActivity
 The `NavigationActivity` is responsible for navigating a route. It sets up listeners for navigation events and updates the UI when they occur. The `NavigationActivity` binds to the `NavigationNotificationService` (described above) -- which manages the NavigationManager instance -- and once connected, starts navigation using the route provided by the `RouteSelectionActivity`.
