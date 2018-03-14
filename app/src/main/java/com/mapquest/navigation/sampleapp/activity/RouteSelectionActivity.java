@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -34,8 +35,6 @@ import com.mapbox.mapboxsdk.maps.MapboxMap.OnMapClickListener;
 import com.mapbox.mapboxsdk.maps.MapboxMap.OnMapLongClickListener;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapquest.mapping.maps.RoutePolylinePresenter;
-import com.mapquest.navigation.ShapeSegmenter;
-import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.RouteService;
 import com.mapquest.navigation.dataclient.listener.RoutesResponseListener;
 import com.mapquest.navigation.internal.ShapeCalculator;
@@ -59,6 +58,8 @@ import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragment;
 import com.mapquest.navigation.sampleapp.searchahead.SearchBarView;
 import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
 import com.mapquest.navigation.sampleapp.util.LocationUtil;
+import com.mapquest.navigation.util.ShapeSegmenter;
+import com.mapquest.navigation.util.ShapeSegmenter.SpanPathPair;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -94,6 +95,9 @@ public class RouteSelectionActivity extends AppCompatActivity
     private static final float SELECTED_ROUTE_OPACITY = 1.00f;
 
     private static final String SEARCH_AHEAD_FRAGMENT_TAG = "tag_search_ahead_fragment";
+
+    private static final String SHARED_PREFERENCE_NAME = "com.mapquest.navigation.sampleapp.activity.RouteSelectionActivity";
+    private static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
 
     @BindView(R.id.start)
     protected Button mStartButton;
@@ -412,7 +416,53 @@ public class RouteSelectionActivity extends AppCompatActivity
     protected void startNavigationActivity() {
         mRouteNameTextView.setVisibility(View.GONE);
 
-        NavigationActivity.start(this, mSelectedRoute);
+        final SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFERENCE_NAME, MODE_PRIVATE);
+        if (sharedPreferences.contains(USER_TRACKING_CONSENT_KEY)) {
+            boolean userGrantedLocationTrackingConsent = sharedPreferences.getBoolean(USER_TRACKING_CONSENT_KEY, false);
+
+            Intent navigationActivityIntent = NavigationActivity
+                    .buildNavigationActivityIntent(this, mSelectedRoute, userGrantedLocationTrackingConsent);
+
+            startActivity(navigationActivityIntent);
+
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.user_tracking_consent_dialog_title)
+                    .setMessage(R.string.user_tracking_consent_dialog_message)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.user_tracking_consent_dialog_positive_button_text,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    sharedPreferences.edit()
+                                            .putBoolean(USER_TRACKING_CONSENT_KEY, true)
+                                            .apply();
+
+                                    Intent navigationActivityIntent = NavigationActivity
+                                            .buildNavigationActivityIntent(RouteSelectionActivity.this,
+                                                    mSelectedRoute, true);
+
+                                    startActivity(navigationActivityIntent);
+
+                                }
+                            })
+                    .setNegativeButton(R.string.user_tracking_consent_dialog_negative_button_text,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    sharedPreferences.edit()
+                                            .putBoolean(USER_TRACKING_CONSENT_KEY, false)
+                                            .apply();
+
+                                    Intent navigationActivityIntent = NavigationActivity
+                                            .buildNavigationActivityIntent(RouteSelectionActivity.this,
+                                                    mSelectedRoute, false);
+
+                                    startActivity(navigationActivityIntent);
+                                }
+                            })
+                    .show();
+        }
     }
 
     private void acquireCurrentLocationAndZoom(final MapboxMap mapController) {
@@ -450,7 +500,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 });
     }
 
-    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingLocation, final List<Coordinate> destinationLocations) {
+    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingCoordinate, final List<Coordinate> destinationCoordinates) {
         RoutesResponseListener responseListener = new RoutesResponseListener() {
             @Override
             public void onRequestMade() {
@@ -490,7 +540,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 .build();
 
         try {
-            mRouteService.requestRoutes(startingLocation, destinationLocations, routeOptions, responseListener);
+            mRouteService.requestRoutesForCoordinates(startingCoordinate, destinationCoordinates, routeOptions, responseListener);
         } catch (IllegalArgumentException e) {
             toast(RouteSelectionActivity.this, e.getLocalizedMessage());
         }

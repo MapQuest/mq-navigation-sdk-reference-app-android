@@ -1,5 +1,6 @@
 package com.mapquest.navigation.sampleapp.activity;
 
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.arch.lifecycle.LifecycleRegistry;
 import android.arch.lifecycle.LifecycleRegistryOwner;
@@ -28,7 +29,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mapbox.mapboxsdk.annotations.Marker;
-import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -38,8 +38,6 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapquest.mapping.maps.MapView;
 import com.mapquest.mapping.maps.RoutePolylinePresenter;
 import com.mapquest.navigation.NavigationManager;
-import com.mapquest.navigation.ShapeSegmenter;
-import com.mapquest.navigation.ShapeSegmenter.SpanPathPair;
 import com.mapquest.navigation.dataclient.listener.RouteResponseListener;
 import com.mapquest.navigation.dataclient.listener.TrafficResponseListener;
 import com.mapquest.navigation.internal.NavigationManagerImpl;
@@ -47,6 +45,7 @@ import com.mapquest.navigation.internal.collection.CollectionsUtil;
 import com.mapquest.navigation.internal.logging.AccumulatingLogger;
 import com.mapquest.navigation.internal.unit.Duration;
 import com.mapquest.navigation.internal.unit.Speed;
+import com.mapquest.navigation.internal.util.ArgumentValidator;
 import com.mapquest.navigation.internal.util.LogUtil;
 import com.mapquest.navigation.listener.DefaultNavigationProgressListener;
 import com.mapquest.navigation.listener.EtaResponseListener;
@@ -67,6 +66,7 @@ import com.mapquest.navigation.model.SpeedLimitSpan;
 import com.mapquest.navigation.model.SystemOfMeasurement;
 import com.mapquest.navigation.model.Traffic;
 import com.mapquest.navigation.model.location.Coordinate;
+import com.mapquest.navigation.model.location.Destination;
 import com.mapquest.navigation.model.location.Location;
 import com.mapquest.navigation.model.location.LocationObservation;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
@@ -78,6 +78,8 @@ import com.mapquest.navigation.sampleapp.view.DirectionsListAdapter;
 import com.mapquest.navigation.sampleapp.view.LaneGuidanceBar;
 import com.mapquest.navigation.sampleapp.view.ManeuverApproachBar;
 import com.mapquest.navigation.sampleapp.view.NarrativeAdapter;
+import com.mapquest.navigation.util.ShapeSegmenter;
+import com.mapquest.navigation.util.ShapeSegmenter.SpanPathPair;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -102,7 +104,8 @@ import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class NavigationActivity extends AppCompatActivity implements LifecycleRegistryOwner {
 
-    public static final String ROUTE_KEY = "route";
+    private static final String ROUTE_KEY = "route";
+    private static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
 
     private static final String TAG = LogUtil.generateLoggingTag(NavigationActivity.class);
     private static final int PATH_WIDTH = 5;
@@ -118,7 +121,6 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     private LifecycleRegistry lifecycleRegistry = new LifecycleRegistry(this);
 
     private ServiceConnection mServiceConnection;
-    private Intent mServiceIntent;
     private NavigationNotificationService mNotificationService;
     private static NavigationManager mNavigationManager;
     private LocationProviderAdapter mLocationProviderAdapter;
@@ -248,6 +250,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     private boolean mShouldRestoreFollowMode;
     private LocationObservation mLastLocationObservation;
+    private boolean mUserTrackingConsentGranted;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -255,6 +258,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
         if (getIntent().getExtras() != null) {
             mRoute = getIntent().getExtras().getParcelable(ROUTE_KEY);
+            mUserTrackingConsentGranted = getIntent().getExtras().getBoolean(USER_TRACKING_CONSENT_KEY);
         }
         mShouldRestoreFollowMode = (savedInstanceState == null) || savedInstanceState.getBoolean(FOLLOWING_KEY);
 
@@ -279,7 +283,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 mInitialRoute = null;
 
                 // bind to our Navigation Service (which provides and manages a NavigationManager instance)
-                mServiceConnection = initializeNavigationService();
+                mServiceConnection = initializeNavigationService(mRoute);
             }
         });
 
@@ -341,7 +345,8 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
-    private ServiceConnection initializeNavigationService() {
+    private ServiceConnection initializeNavigationService(@NonNull Route route) {
+        ArgumentValidator.assertNotNull(route);
 
         Log.d(TAG, "initializeNavigationService()");
         displayProgressDialog("Starting Navigation", "Starting navigation. One moment...");
@@ -354,7 +359,6 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 dismissProgressDialog();
 
                 mNotificationService = NavigationNotificationService.fromBinder(binder);
-                mNotificationService.setRoute(mRoute);
 
                 mNavigationManager = mNotificationService.getNavigationManager();
 
@@ -377,12 +381,18 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             }
         };
 
-        mServiceIntent = new Intent(this, NavigationNotificationService.class);
-        if (mRoute != null) {
-            mServiceIntent.putExtra(NavigationNotificationService.NAVIGATION_LANGUAGE_CODE_KEY, mRoute.getRouteOptions().getLanguage());
-        }
-        startService(mServiceIntent); // note: we both start *and* bind to svc to keep it running even if activity is killed
-        bindService(mServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        Intent navigationActivityIntent = buildNavigationActivityIntent(getApplicationContext(), mRoute,
+                mUserTrackingConsentGranted);
+
+        PendingIntent notificationContentIntent = PendingIntent.getActivity(getApplicationContext(),
+                0, navigationActivityIntent, 0);
+
+        Intent serviceIntent = NavigationNotificationService.buildNavigationNotificationServiceIntent(
+                getApplicationContext(), route.getRouteOptions().getLanguage(), mUserTrackingConsentGranted,
+                notificationContentIntent);
+
+        startService(serviceIntent); // note: we both start *and* bind to svc to keep it running even if activity is killed
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
         return serviceConnection;
     }
@@ -746,10 +756,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         return new LatLng(coordinate.getLatitude(), coordinate.getLongitude());
     }
 
-    public static void start(Context activity, Route route) {
-        Intent intent = new Intent(activity, NavigationActivity.class);
+    public static Intent buildNavigationActivityIntent(Context context, Route route, boolean userTrackingConsentGranted) {
+        Intent intent = new Intent(context, NavigationActivity.class);
         intent.putExtra(ROUTE_KEY, route);
-        activity.startActivity(intent);
+        intent.putExtra(USER_TRACKING_CONSENT_KEY, userTrackingConsentGranted);
+        return intent;
     }
 
     private void moveZoomAndTiltMap(double latitude, double longitude, double zoom, double tilt) {
@@ -972,7 +983,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
 
         @Override
-        public void onDestinationReached(boolean isFinalDestination, @NonNull RouteLeg routeLegCompleted, @NonNull final DestinationAcceptanceHandler destinationAcceptanceHandler) {
+        public void onDestinationReached(@NonNull Destination destination, boolean isFinalDestination,
+                @NonNull RouteLeg routeLegCompleted,
+                @NonNull final DestinationAcceptanceHandler destinationAcceptanceHandler) {
             if (!isFinalDestination) {
 
                 final AlertDialog alertDialog = new AlertDialog.Builder(NavigationActivity.this)
