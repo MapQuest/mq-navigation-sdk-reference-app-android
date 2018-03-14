@@ -22,6 +22,13 @@ Version 3 of the Mapquest Navigation SDK is a ground-up rewrite aimed at creatin
 
 ## Release Notes
 
+### MQNavigation 3.3.0 (Android)
+#### Notable Updates
+- Destinations for your routes can be specified either as simply lat/long coordinates, or as "MQIds"
+- Traffic Data Collection is enabled by default, but can be disabled; ask your MapQuest Account Representative for details
+- Rerouting can be disabled by setting a `RerouteBehaviorOverride` on the `NavigationManager` instance
+- Improvements to ETA updates
+
 ### MQNavigation 3.2.2 (Android)
 #### Notable Updates
 - Multi-Stop Routes: SDK now supports navigation of a route with more than one destination (i.e. multiple "route legs")
