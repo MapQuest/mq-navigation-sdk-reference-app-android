@@ -24,7 +24,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mapbox.mapboxsdk.annotations.Marker;
-import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -49,6 +48,7 @@ import com.mapquest.navigation.model.RouteLeg;
 import com.mapquest.navigation.model.RouteOptions;
 import com.mapquest.navigation.model.SystemOfMeasurement;
 import com.mapquest.navigation.model.location.Coordinate;
+import com.mapquest.navigation.model.location.Destination;
 import com.mapquest.navigation.model.location.Location;
 import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
@@ -64,10 +64,8 @@ import com.mapquest.navigation.util.ShapeSegmenter.SpanPathPair;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -137,7 +135,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     }
 
     private Coordinate mStartingCoordinate;
-    private List<Coordinate> mDestinationCoordinates = new ArrayList<>();
+    private List<Destination> mDestinationLocations = new ArrayList<>();
 
     private Marker mOriginMarker;
     private List<Marker> mDestinationMarkers = new ArrayList<>();
@@ -196,7 +194,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                     @Override
                     public void onMapLongClick(@NonNull LatLng clickedLocation) {
                         Coordinate destinationCoordinate = toCoordinate(clickedLocation);
-                        addDestinationToRoute(destinationCoordinate);
+                        addDestinationToRoute(destinationCoordinate, null);
                     }
                 };
 
@@ -232,7 +230,8 @@ public class RouteSelectionActivity extends AppCompatActivity
         for (Marker marker : mDestinationMarkers) {
             removeDestinationMarker(marker);
         }
-        mDestinationCoordinates.clear();
+
+        mDestinationLocations.clear();
 
         enableButton(mClearRoutesButton, false);
         enableButton(mRetrieveRoutesButton, false);
@@ -290,7 +289,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     @OnClick(R.id.retrieve_routes)
     protected void retrieveRoutes() {
         mRouteNameTextView.setVisibility(View.GONE);
-        acquireCurrentLocationAndRetrieveRoutesToDestinations(mDestinationCoordinates);
+        acquireCurrentLocationAndRetrieveRoutesToDestinations(mDestinationLocations);
     }
 
     @OnClick(R.id.clear_routes)
@@ -299,7 +298,8 @@ public class RouteSelectionActivity extends AppCompatActivity
         for (Marker marker : new ArrayList<>(mDestinationMarkers)) {
             removeDestinationMarker(marker);
         }
-        mDestinationCoordinates.clear();
+
+        mDestinationLocations.clear();
 
         mRouteNameTextView.setVisibility(View.GONE);
         enableButton(mClearRoutesButton, false);
@@ -317,13 +317,13 @@ public class RouteSelectionActivity extends AppCompatActivity
     }
 
     @Override
-    public void onSearchResultSelected(String displayName, Coordinate coordinate) {
+    public void onSearchResultSelected(String displayName, Coordinate coordinate, String mqId) {
         // add selected search-result as (another) destination to route
-        addDestinationToRoute(coordinate);
+        addDestinationToRoute(coordinate, mqId);
     }
 
-    private void addDestinationToRoute(Coordinate destinationCoordinate) {
-        mDestinationCoordinates.add(destinationCoordinate);
+    private void addDestinationToRoute(Coordinate destinationCoordinate, String mqId) {
+
         mDestinationMarkers.add(markDestination(destinationCoordinate, R.color.marker_blue));
 
         // get bounding-rect of origin point and all destinations; adjust map-view accordingly to show all
@@ -340,6 +340,9 @@ public class RouteSelectionActivity extends AppCompatActivity
                 (int) getMapExtentPaddingBottom()));
 
         mSelectedRoute = null;
+
+        Log.d(TAG, "addDestinationToRoute: adding new destination location with mqid " + mqId);
+        mDestinationLocations.add(new Destination(destinationCoordinate, mqId));
 
         enableButton(mClearRoutesButton, true);
         enableButton(mRetrieveRoutesButton, true);
@@ -488,7 +491,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 });
     }
 
-    private void acquireCurrentLocationAndRetrieveRoutesToDestinations(final List<Coordinate> destinationLocations) {
+    private void acquireCurrentLocationAndRetrieveRoutesToDestinations(final List<Destination> destinationLocations) {
         LocationProviderAdapter locationProviderAdapter = mApp.getLocationProviderAdapter();
         LocationUtil.acquireLocation(this, locationProviderAdapter,
                 new LocationProviderAdapter.LocationAcquisitionListener() {
@@ -500,7 +503,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 });
     }
 
-    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingCoordinate, final List<Coordinate> destinationCoordinates) {
+    private void retrieveRouteFromStartingLocationToDestinations(final Coordinate startingCoordinate, final List<Destination> destinationLocations) {
         RoutesResponseListener responseListener = new RoutesResponseListener() {
             @Override
             public void onRequestMade() {
@@ -540,7 +543,7 @@ public class RouteSelectionActivity extends AppCompatActivity
                 .build();
 
         try {
-            mRouteService.requestRoutesForCoordinates(startingCoordinate, destinationCoordinates, routeOptions, responseListener);
+            mRouteService.requestRoutes(startingCoordinate, destinationLocations, routeOptions, responseListener);
         } catch (IllegalArgumentException e) {
             toast(RouteSelectionActivity.this, e.getLocalizedMessage());
         }

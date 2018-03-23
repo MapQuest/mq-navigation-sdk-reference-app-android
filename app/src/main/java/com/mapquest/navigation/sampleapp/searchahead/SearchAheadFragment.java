@@ -43,7 +43,7 @@ public class SearchAheadFragment extends Fragment {
 
     // NOTE: container Activity must implement this interface
     public interface OnSearchResultSelectedListener {
-        public void onSearchResultSelected(String displayName, Coordinate coordinate);
+        public void onSearchResultSelected(String displayName, Coordinate coordinate, String mqId);
     }
 
     @Nullable
@@ -136,7 +136,9 @@ public class SearchAheadFragment extends Fragment {
                 if (resultPlace != null) {
                     LatLng latLng = searchAheadResult.getPlace().getLatLng();
                     Coordinate searchResultCoordinate = new Coordinate(latLng.getLatitude(), latLng.getLongitude());
-                    mOnSearchResultSelectedListener.onSearchResultSelected(searchAheadResult.getDisplayString(), searchResultCoordinate);
+                    String mqId = searchAheadResult.getSearchAheadId().getMqId();
+
+                    mOnSearchResultSelectedListener.onSearchResultSelected(searchAheadResult.getDisplayString(), searchResultCoordinate, mqId);
                     mSearchBarView.clearSearchField();
 
                     UiUtil.hideKeyboard(parent);
