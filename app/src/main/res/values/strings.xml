@@ -30,7 +30,7 @@
     <string name="asset_font_filename_semibold">fonts/raleway-semibold-webfont.ttf</string>
 
     <string name="user_tracking_consent_dialog_title">Allow MapQuest to collect data?</string>
-    <string name="user_tracking_consent_dialog_message">MapQuest uses location data to provide its services and will collect location information during active navigation. This information will be used, with your permission, to enhance location-based services and experiences supported by Verizon (including MapQuest and Oath).</string>
+    <string name="user_tracking_consent_dialog_message">Get consent here after clearly indicating that this app will collect precise location data when app is actively navigating and will be shared with third parties for their independent use.</string>
     <string name="user_tracking_consent_dialog_negative_button_text">No</string>
     <string name="user_tracking_consent_dialog_positive_button_text">Yes</string>
 </resources>
