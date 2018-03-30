@@ -5,7 +5,8 @@ def appVersionCode = System.getProperty('versionCode', defaultAppVersionCode).to
 
 repositories {
     maven { url 'https://maven.google.com' }
-    maven { url "https://artifactory.us-east-1.aws.aol.com/artifactory/maven-mapquest-us-east-1-local" }
+    maven { url 'https://artifactory.ouroath.com/artifactory/android-local-snapshot' }
+    maven { url 'https://edge.artifactory.ouroath.com:4443/artifactory/remote-repos/' }
 }
 
 android {
