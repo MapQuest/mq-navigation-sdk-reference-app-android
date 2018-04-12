@@ -19,18 +19,15 @@ import android.util.Log;
 
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.internal.util.ArgumentValidator;
+import com.mapquest.navigation.internal.util.LogUtil;
+import com.mapquest.navigation.listener.NavigationStateListener;
 import com.mapquest.navigation.location.LocationProviderAdapter;
+import com.mapquest.navigation.model.RouteStoppedReason;
 import com.mapquest.navigation.model.UserLocationTrackingConsentStatus;
 import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
 import com.mapquest.navigation.sampleapp.R;
 import com.mapquest.navigation.sampleapp.tts.TextToSpeechPromptListenerManager;
-import com.mapquest.navigation.internal.NavigationManagerImpl;
-import com.mapquest.navigation.internal.util.LogUtil;
-import com.mapquest.navigation.listener.NavigationLifecycleEventListener;
-import com.mapquest.navigation.model.Route;
-import com.mapquest.navigation.model.RouteStoppedReason;
-import com.mapquest.navigation.model.location.Coordinate;
 
 public class NavigationNotificationService extends Service implements LifecycleRegistryOwner {
 
@@ -165,8 +162,7 @@ public class NavigationNotificationService extends Service implements LifecycleR
 
         mNavigationManager = new NavigationManager.Builder(this, BuildConfig.API_KEY, locationProviderAdapter).build();
 
-        ((NavigationManagerImpl) mNavigationManager).addNavigationLifecycleEventListener(
-                new NotificationUpdatingNavigationLifecycleEventListener());
+        mNavigationManager.addNavigationStateListener(new NotificationNavigationStateListener());
 
         UserLocationTrackingConsentStatus userLocationTrackingConsentStatus = mUserTrackingConsentGranted ?
                 UserLocationTrackingConsentStatus.GRANTED : UserLocationTrackingConsentStatus.DENIED;
@@ -186,18 +182,16 @@ public class NavigationNotificationService extends Service implements LifecycleR
         }
     }
 
-    private class NotificationUpdatingNavigationLifecycleEventListener implements NavigationLifecycleEventListener {
-        @Override
-        public void onRouteAccepted(Route route) { }
-
-        @Override
-        public void onNavigationStarting() {
-            updateNotification(buildNotification("Starting navigation"));
-        }
+    private class NotificationNavigationStateListener implements NavigationStateListener {
 
         @Override
         public void onNavigationStarted() {
             updateNotification(buildNotification("Navigation in progress"));
+        }
+
+        @Override
+        public void onNavigationStopped(@NonNull RouteStoppedReason routeStoppedReason) {
+            clearNotification();
         }
 
         @Override
@@ -209,17 +203,8 @@ public class NavigationNotificationService extends Service implements LifecycleR
         public void onNavigationResumed() {
             updateNotification(buildNotification("Navigation in progress"));
         }
-
-        @Override
-        public void onOffRoute(Coordinate observedLocation) {
-            updateNotification(buildNotification("Off-route"));
-        }
-
-        @Override
-        public void onNavigationStopped(RouteStoppedReason routeStoppedReason) {
-            clearNotification();
-        }
     }
+
 
     private Notification buildNotification(String description) {
         return new NotificationCompat.Builder(getApplicationContext(), NOTIFICATION_CHANNEL_ID)

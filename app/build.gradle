@@ -1,12 +1,11 @@
 apply plugin: 'com.android.application'
 
-def defaultAppVersionCode = '1'
+def defaultAppVersionCode = '2'
 def appVersionCode = System.getProperty('versionCode', defaultAppVersionCode).toInteger()
 
 repositories {
     maven { url 'https://maven.google.com' }
-    maven { url 'https://artifactory.ouroath.com/artifactory/android-local-snapshot' }
-    maven { url 'https://edge.artifactory.ouroath.com:4443/artifactory/remote-repos/' }
+    maven { url "http://artifactory.cloud.mapquest.com/artifactory/et-android-binaries"}
 }
 
 android {
@@ -44,7 +43,7 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.1.0-beta2'
     compile 'com.android.support:design:27.1.0'
 
-    compile('com.mapquest:navigation:3.3.0')            // the MapQuest Navigation SDK
+    implementation('com.mapquest:navigation:3.3.0')
     compile('com.mapzen.android:lost:3.0.4')            // used for GPS Location Acquisition (see notes)
 
     compile('com.mapquest:mapping-android-sdk:2.0.1') { // for Mapping SDK MapView; displays route to navigate
