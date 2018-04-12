@@ -5,7 +5,7 @@ A simple navigation app built as a reference design for customers, and to demons
 for a typical navigation application.
 
 Please also refer to the "Getting Started" documentation and javadocs for the MapQuest Navigation SDK  on the MapQuest Developer Portal, here:
-https://developer.mapquest.com/documentation/nav-sdk/v3.2/android/
+https://developer.mapquest.com/documentation/nav-sdk/android/
 
 
 Building the Sample Application Project
