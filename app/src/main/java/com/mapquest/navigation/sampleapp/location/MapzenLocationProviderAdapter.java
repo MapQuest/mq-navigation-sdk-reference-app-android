@@ -1,10 +1,8 @@
 package com.mapquest.navigation.sampleapp.location;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresPermission;
 import android.util.Log;
 
 import com.mapquest.navigation.internal.util.ArgumentValidator;
@@ -21,9 +19,6 @@ import com.mapzen.android.lost.api.ResultCallback;
 import com.mapzen.android.lost.api.Status;
 
 import java.util.concurrent.TimeUnit;
-
-import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
-import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
 public class MapzenLocationProviderAdapter extends LocationProviderAdapter implements ConnectionCallbacks {
 
@@ -153,6 +148,11 @@ public class MapzenLocationProviderAdapter extends LocationProviderAdapter imple
 
         mLostApiClient.disconnect();
         mAreLocationUpdatesRunning = false;
+    }
+
+    @Override
+    public String getLocationProviderId() {
+        return "mapzen-location-provider";
     }
 
     private static Location buildLocation(android.location.Location location) {

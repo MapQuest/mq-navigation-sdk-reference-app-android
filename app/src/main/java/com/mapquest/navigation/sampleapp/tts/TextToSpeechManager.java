@@ -8,20 +8,20 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.FloatRange;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.mapquest.navigation.sampleapp.tts.audio.AudioFocusLossListener;
 import com.mapquest.navigation.internal.util.ArgumentValidator;
 import com.mapquest.navigation.internal.util.LogUtil;
 import com.mapquest.navigation.internal.util.SystemVersionUtil;
-import com.mapquest.navigation.listener.SpeechListener;
+import com.mapquest.navigation.sampleapp.tts.audio.AudioFocusLossListener;
 
 import java.util.HashMap;
 import java.util.Locale;
 
+import static com.mapquest.navigation.internal.collection.CollectionsUtil.asStringMap;
 import static com.mapquest.navigation.sampleapp.tts.audio.AudioManagerUtil.getAudioManager;
 import static com.mapquest.navigation.sampleapp.tts.audio.AudioManagerUtil.wasFocusGranted;
-import static com.mapquest.navigation.internal.collection.CollectionsUtil.asStringMap;
 
 /**
  * Used to speak text. Proxies calls to Android's underlying TTS implementation, handling additional
@@ -62,7 +62,7 @@ public class TextToSpeechManager {
         mPreferredTtsEngineName = preferredTtsEngineName;
     }
 
-    public synchronized void initialize(final String languageTag) {
+    public synchronized void initialize(@Nullable final String languageTag) {
         if(mTextToSpeech != null) {
             Log.w(TAG, "Ignoring request to initialize when already initialized.");
             return;

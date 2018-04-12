@@ -9,7 +9,6 @@ import android.support.annotation.Nullable;
 
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.internal.util.ArgumentValidator;
-import com.mapquest.navigation.listener.PromptSpeechListener;
 
 public class TextToSpeechPromptListenerManager implements LifecycleObserver {
     private static final String GOOGLE_TTS_ENGINE_NAME = "com.google.android.tts";
@@ -25,21 +24,21 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
 
     public TextToSpeechPromptListenerManager(@NonNull Context context,
                                              @NonNull Lifecycle lifecycle,
-                                             String languageTag ) {
+                                             @Nullable String languageTag ) {
         this(lifecycle, new TextToSpeechManager(context.getApplicationContext(), GOOGLE_TTS_ENGINE_NAME), languageTag);
     }
 
     /*package*/ TextToSpeechPromptListenerManager(
             @NonNull Lifecycle lifecycle,
             @NonNull TextToSpeechManager textToSpeechManager,
-            String languageTag) {
+            @Nullable String languageTag) {
         this(lifecycle, textToSpeechManager, new TextToSpeechPromptListener(textToSpeechManager), languageTag);
     }
 
     /*package*/ TextToSpeechPromptListenerManager(@NonNull Lifecycle lifecycle,
                                               @NonNull TextToSpeechManager textToSpeechManager,
                                               @NonNull TextToSpeechPromptListener textToSpeechPromptListener,
-                                              String languageTag) {
+                                              @Nullable String languageTag) {
         mLifecycle = lifecycle;
         mTextToSpeechManager = textToSpeechManager;
         mTextToSpeechManager.initialize(languageTag);
@@ -55,10 +54,6 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
         if (mLifecycle.getCurrentState().isAtLeast(Lifecycle.State.CREATED)) {
             mNavigationManager.addPromptListener(mPromptListener);
         }
-    }
-
-    public void setPromptSpeechListener(@Nullable PromptSpeechListener promptSpeechListener) {
-        mPromptListener.setPromptSpeechListener(promptSpeechListener);
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
