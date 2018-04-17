@@ -50,14 +50,18 @@ import com.mapquest.navigation.sampleapp.BuildConfig;
 import com.mapquest.navigation.sampleapp.MQNavigationSampleApplication;
 import com.mapquest.navigation.sampleapp.R;
 import com.mapquest.navigation.sampleapp.location.CurrentLocationProvider;
-import com.mapquest.navigation.sampleapp.searchahead.SearchAheadFragment;
+import com.mapquest.navigation.sampleapp.routesettings.RouteSettingsFragment;
+import com.mapquest.navigation.sampleapp.routesettings.RouteStop;
+import com.mapquest.navigation.sampleapp.routesettings.RouteStopsChangedListener;
 import com.mapquest.navigation.sampleapp.searchahead.SearchBarView;
 import com.mapquest.navigation.sampleapp.service.NavigationNotificationService;
+import com.mapquest.navigation.sampleapp.util.CoordinateComparisonUtil;
 import com.mapquest.navigation.sampleapp.util.LocationUtil;
 import com.mapquest.navigation.util.ShapeSegmenter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +77,7 @@ import static com.mapquest.navigation.sampleapp.util.UiUtil.buildDownArrowMarker
 import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class RouteSelectionActivity extends AppCompatActivity
-        implements CurrentLocationProvider, SearchAheadFragment.OnSearchResultSelectedListener {
+        implements CurrentLocationProvider, RouteStopsChangedListener {
 
     private static final String TAG = LogUtil.generateLoggingTag(RouteSelectionActivity.class);
 
@@ -111,6 +115,7 @@ public class RouteSelectionActivity extends AppCompatActivity
     private RoutePolylinePresenter mRoutePolylinePresenter;
     private MapboxMap.OnMapLongClickListener mMapLongClickListener;
     private ProgressDialog mRoutingDialog;
+    private Toolbar toolbar;
 
     private com.mapquest.navigation.model.location.Location mLastLocation;
     private LocationPermissionsResultListener locationPermissionsResultListener;
@@ -153,7 +158,7 @@ public class RouteSelectionActivity extends AppCompatActivity
         setContentView(R.layout.activity_route_selection);
         ButterKnife.bind(this);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         mApp = (MQNavigationSampleApplication) getApplication();
@@ -164,11 +169,18 @@ public class RouteSelectionActivity extends AppCompatActivity
         searchBarView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SearchAheadFragment searchAheadFragment = SearchAheadFragment.newInstance();
-                getSupportFragmentManager().beginTransaction()
-                            .add(android.R.id.content, searchAheadFragment, SEARCH_AHEAD_FRAGMENT_TAG)
+                List<RouteStop> routeStops = getRouteStops();
+                if (routeStops.isEmpty()) {
+                    Toast.makeText(RouteSelectionActivity.this, R.string.route_stops_not_available, Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    RouteSettingsFragment routeSettingsFragment = RouteSettingsFragment.newInstance(getRouteStops());
+
+                    getSupportFragmentManager().beginTransaction()
+                            .add(android.R.id.content, routeSettingsFragment, SEARCH_AHEAD_FRAGMENT_TAG)
                             .addToBackStack(null)
                             .commit();
+                }
             }
         });
 
@@ -273,6 +285,51 @@ public class RouteSelectionActivity extends AppCompatActivity
         }
     }
 
+    @Override
+    public void routeStopAdded(RouteStop routeStopAdded, List<RouteStop> allStops) {
+        addDestinationToRoute(routeStopAdded.getCoordinate(), routeStopAdded.getMqId());
+    }
+
+    @Override
+    public void routeStopRemoved(RouteStop routeStopRemoved, List<RouteStop> allStops) {
+        clearMappedRoutes();
+
+        Coordinate coordinateRemoved = routeStopRemoved.getCoordinate();
+
+        // TODO: Handle removing destinations in a simpler way
+        for (Destination destination: new ArrayList<>(mDestinationLocations)) {
+            if (CoordinateComparisonUtil.areEqual(destination.getCoordinate(), coordinateRemoved)) {
+                mDestinationLocations.remove(destination);
+            }
+        }
+
+        for (Marker marker : new ArrayList<>(mDestinationMarkers)) {
+            if (marker.getPosition().getLatitude() == coordinateRemoved.getLatitude() &&
+                    marker.getPosition().getLongitude() == coordinateRemoved.getLongitude()) {
+                removeDestinationMarker(marker);
+            }
+        }
+    }
+
+    private List<RouteStop> getRouteStops() {
+        if (mLastLocation == null) {
+            return Collections.emptyList();
+        }
+
+        List<RouteStop> routeStops = new ArrayList<>();
+
+        Coordinate currentLocationCoordinate = new Coordinate(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+        routeStops.add(new RouteStop("Current Location", currentLocationCoordinate, null));
+
+        int index = 1;
+        for (Destination destination: mDestinationLocations) {
+            routeStops.add(new RouteStop("Stop " + index, destination.getCoordinate(), destination.getMqId()));
+            index++;
+        }
+
+        return routeStops;
+    }
+
     protected interface LocationPermissionsResultListener {
         void onRequestLocationPermissionsResult(boolean locationPermissionsWereGranted);
     }
@@ -309,12 +366,6 @@ public class RouteSelectionActivity extends AppCompatActivity
         button.setEnabled(enable);
         button.setTextColor(enable ? getResources().getColor(R.color.black) :
                 getResources().getColor(R.color.disabled_grey));
-    }
-
-    @Override
-    public void onSearchResultSelected(String displayName, Coordinate coordinate, String mqId) {
-        // add selected search-result as (another) destination to route
-        addDestinationToRoute(coordinate, mqId);
     }
 
     private void addDestinationToRoute(Coordinate destinationCoordinate, String mqId) {
@@ -663,23 +714,6 @@ public class RouteSelectionActivity extends AppCompatActivity
         public void onMapClick(@NonNull LatLng latLng) {
             List<Route> drawnRoutes = new ArrayList<>(mRoutePolylineOptionsListByRoute.keySet());
             setSelectedRoute(findNearestRoute(drawnRoutes, toCoordinate(latLng)));
-
-//            List<Route> routes = new ArrayList<>(mRoutePolylineOptionsListByRoute.keySet());
-//            clearMappedRoutes();
-//
-//            mSelectedRoute = findNearestRoute(routes, toCoordinate(latLng));
-//            if(mSelectedRoute != null) {
-//                // Move to the end, so the selected route gets drawn over the rest
-//                if(routes.remove(mSelectedRoute)) {
-//                    routes.add(mSelectedRoute);
-//
-//                    mapRoutes(routes, mSelectedRoute);
-//                }
-//                mRouteNameTextView.setText(mSelectedRoute.getName() != null ? mSelectedRoute.getName() : "");
-//                mRouteNameTextView.setVisibility(View.VISIBLE);
-//
-//                enableButton(mStartButton, true);
-//            }
         }
     }
 

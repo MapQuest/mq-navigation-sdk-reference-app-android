@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
 
 def defaultAppVersionCode = '2'
 def appVersionCode = System.getProperty('versionCode', defaultAppVersionCode).toInteger()
@@ -42,6 +44,8 @@ dependencies {
     compile 'com.android.support:appcompat-v7:27.1.0'
     compile 'com.android.support.constraint:constraint-layout:1.1.0-beta2'
     compile 'com.android.support:design:27.1.0'
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
 
     implementation('com.mapquest:navigation:3.3.0')
     compile('com.mapzen.android:lost:3.0.4')            // used for GPS Location Acquisition (see notes)

@@ -20,6 +20,20 @@
     <!-- Search Ahead -->
     <string name="enter_location">Enter Location</string>
     <string name="max_search_character_limit">Sorry, unable to handle more than 100 characters in search.</string>
+    <string name="route_stops_not_available">Route stops are not available yet, try again in a moment.</string>
+
+    <!-- Route Options -->
+    <string name="route_stops_title">Route Stops</string>
+    <string name="route_options_title">Route Options</string>
+    <string name="tollways_option">Tollways</string>
+    <string name="highways_option">Highways</string>
+    <string name="ferries_option">Ferries</string>
+    <string name="unpaved_option">Unpaved</string>
+    <string name="international_borders_option">International Borders</string>
+    <string name="seasonal_closures_option">Seasonal Closures</string>
+    <string name="rally_mode_option">Rally Mode</string>
+    <string name="system_of_measurement_option">Measurement Units</string>
+    <string name="navigation_language_option">Navigation Language</string>
 
     <!-- Fonts -->
     <string name="asset_font_filename_bold">fonts/raleway-bold-webfont.ttf</string>
