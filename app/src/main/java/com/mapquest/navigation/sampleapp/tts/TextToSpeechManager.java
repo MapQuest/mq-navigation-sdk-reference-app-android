@@ -98,7 +98,7 @@ public class TextToSpeechManager {
         initializationListener.setTextToSpeech(textToSpeech);
     }
 
-    void deinitializeImmediately() {
+    public void deinitializeImmediately() {
         if(mTextToSpeech == null) {
             Log.w(TAG, "Ignoring request to deinitialize when uninitialized.");
             return;
@@ -109,7 +109,7 @@ public class TextToSpeechManager {
         mTextToSpeech = null;
     }
 
-    synchronized void speakWithFocus(String text, SpeechListener speechListener) {
+    public synchronized void speakWithFocus(String text, SpeechListener speechListener) {
         if(mTextToSpeech == null) {
             Log.i(TAG, "Ignoring request to speak while uninitialized.");
             return;
@@ -211,7 +211,7 @@ public class TextToSpeechManager {
     /** Audio focus listener that stops speaking if we lose focus. */
     private class FocusLossListener extends AudioFocusLossListener {
         @Override
-        protected void onAudioFocusLost(int focusChange) {
+        public void onAudioFocusLost(int focusChange) {
             mHasFocus = false;
 
             if (mTextToSpeech != null && mTextToSpeech.isSpeaking()) {

@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.internal.util.ArgumentValidator;
+import com.mapquest.navigation.listener.PromptSpeechListener;
 
 public class TextToSpeechPromptListenerManager implements LifecycleObserver {
     private static final String GOOGLE_TTS_ENGINE_NAME = "com.google.android.tts";
@@ -35,10 +36,11 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
         this(lifecycle, textToSpeechManager, new TextToSpeechPromptListener(textToSpeechManager), languageTag);
     }
 
-    /*package*/ TextToSpeechPromptListenerManager(@NonNull Lifecycle lifecycle,
-                                              @NonNull TextToSpeechManager textToSpeechManager,
-                                              @NonNull TextToSpeechPromptListener textToSpeechPromptListener,
-                                              @Nullable String languageTag) {
+    /*package*/
+    public TextToSpeechPromptListenerManager(@NonNull Lifecycle lifecycle,
+                                             @NonNull TextToSpeechManager textToSpeechManager,
+                                             @NonNull TextToSpeechPromptListener textToSpeechPromptListener,
+                                             @Nullable String languageTag) {
         mLifecycle = lifecycle;
         mTextToSpeechManager = textToSpeechManager;
         mTextToSpeechManager.initialize(languageTag);
@@ -56,8 +58,13 @@ public class TextToSpeechPromptListenerManager implements LifecycleObserver {
         }
     }
 
+    public void setPromptSpeechListener(@Nullable PromptSpeechListener promptSpeechListener) {
+        mPromptListener.setPromptSpeechListener(promptSpeechListener);
+    }
+
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    /*package*/ void destroy() {
+    public
+        /*package*/ void destroy() {
         if (mNavigationManager != null) {
             mNavigationManager.removePromptListener(mPromptListener);
             mNavigationManager = null;

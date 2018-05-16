@@ -31,24 +31,24 @@ import com.mapquest.navigation.sampleapp.tts.TextToSpeechPromptListenerManager;
 
 public class NavigationNotificationService extends Service implements LifecycleRegistryOwner {
 
-    private static final String NAVIGATION_LANGUAGE_CODE_KEY = "navigation_language_code";
-    private static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
-    private static final String NOTIFICATION_CONTENT_INTENT_KEY = "notification_content_intent";
+    protected static final String NAVIGATION_LANGUAGE_CODE_KEY = "navigation_language_code";
+    protected static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
+    public static final String NOTIFICATION_CONTENT_INTENT_KEY = "notification_content_intent";
 
     private static final String TAG = LogUtil.generateLoggingTag(NavigationNotificationService.class);
-    private static final int NOTIFICATION_ID = 1;
+    protected static final int NOTIFICATION_ID = 1;
     private static final String NOTIFICATION_CHANNEL_ID = "nav-channel-id";
     private static final String NOTIFICATION_CHANNEL_NAME = "Navigation";
 
     private IBinder mBinder = new LocalBinder();
-    private NavigationManager mNavigationManager;
+    protected NavigationManager mNavigationManager;
 
-    private String mLanguageCode;
-    private boolean mUserTrackingConsentGranted = false;
+    protected String mLanguageCode;
+    protected boolean mUserTrackingConsentGranted = false;
 
     private PendingIntent mNotificationContentIntent;
 
-    private TextToSpeechPromptListenerManager mTextToSpeechPromptListenerManager;
+    protected TextToSpeechPromptListenerManager mTextToSpeechPromptListenerManager;
     private LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);
 
     public static Intent buildNavigationNotificationServiceIntent(@NonNull Context context,
@@ -182,7 +182,7 @@ public class NavigationNotificationService extends Service implements LifecycleR
         }
     }
 
-    private class NotificationNavigationStateListener implements NavigationStateListener {
+    public class NotificationNavigationStateListener implements NavigationStateListener {
 
         @Override
         public void onNavigationStarted() {
