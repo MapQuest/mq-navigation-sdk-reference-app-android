@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cl_root"
     tools:context="com.mapquest.navigation.sampleapp.activity.RouteSelectionActivity"
     tools:showIn="@layout/activity_route_selection">
 
@@ -80,7 +81,7 @@
         android:layout_marginLeft="16dp"
         android:layout_marginTop="72dp"
         android:src="@drawable/ic_gps_fixed_white_24dp"
-        app:backgroundTint="@color/mapbox_blue"
+        app:backgroundTint="@color/colorPrimary"
         app:borderWidth="0dp"
         app:elevation="0dp"
         app:fabSize="normal"
