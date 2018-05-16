@@ -101,7 +101,7 @@
                 android:paddingTop="25dp"
                 android:src="@drawable/ic_gps_fixed_white_24dp"
                 android:visibility="visible"
-                app:backgroundTint="@color/colorPrimary"
+                app:backgroundTint="@color/mapbox_blue"
                 app:borderWidth="0dp"
                 app:elevation="6dp"
                 app:fabSize="normal"
@@ -300,7 +300,7 @@
             android:layout_alignParentTop="true"
             android:layout_toRightOf="@id/stop"
             android:text=""
-            android:textColor="@color/colorPrimary"
+            android:textColor="@color/mapbox_blue"
             android:textSize="24sp"/>
 
         <com.mapquest.navigation.sampleapp.view.FontTextView
@@ -331,7 +331,7 @@
             android:layout_marginRight="20dp"
             android:gravity="center"
             android:text="@string/list_view_title"
-            android:textColor="@color/colorPrimary"
+            android:textColor="@color/mapbox_blue"
             android:textSize="24sp"
             android:textStyle="bold"
             android:visibility="gone"/>
