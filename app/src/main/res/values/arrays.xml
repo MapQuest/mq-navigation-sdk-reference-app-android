@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="route_option_selections">
+        <item>Allow</item>
+        <item>Disallow</item>
+        <item>Avoid</item>
+    </string-array>
+
+    <string-array name="rally_option_selections">
+        <item>YES</item>
+        <item>NO</item>
+    </string-array>
+
+    <string-array name="system_of_measurement_selections">
+        <item>US</item>
+        <item>Metric</item>
+    </string-array>
+
+    <string-array name="navigation_language_selections">
+        <item>English</item>
+        <item>Spanish</item>
+    </string-array>
+</resources>
