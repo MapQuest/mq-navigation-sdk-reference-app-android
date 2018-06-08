@@ -2,6 +2,10 @@
 
 ### Sample App
 
+#### 3.4.0
+
+* NavSDK Update: updated to use v3.4.0 of the MQ Navigation SDK
+
 #### 3.2.2
 
 * NavSDK Update: updated to use v3.2.2 of the MQ Navigation SDK

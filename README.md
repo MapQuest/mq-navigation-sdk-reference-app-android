@@ -52,7 +52,7 @@ The `NavigationActivity` is responsible for navigating a route. It sets up liste
 #### Supplying a LocationProviderAdapter
 When navigating a route using the `NavigationManager`, the user's location updates are provided to the SDK by a _location provider_. The abstract class `LocationProviderAdapter` in the SDK provides a generic "wrapper" for any location-provider of your choice -- for example, a native Google location service, a "mocked" location-provider (e.g. used during testing), or one of the commonly used 3rd-party location libraries such as _Mapzen Lost_. 
 
-Note: The Navigation SDK sample app provides a recommended, default location provider implementation, namely `MapzenLocationProviderAdapter`.  It is recommended that developers use this implementation, or, if they wish to provide their own, adhere to the recommended guidelines specified in the LocationProviderAdapter javadocs to ensure that other components in the Navigation SDK behave correctly. 
+Note: The Navigation SDK sample app provides a recommended, default location provider implementation, namely `GoogleLocationProviderAdapter`.  It is recommended that developers use this implementation, or, if they wish to provide their own, adhere to the recommended guidelines specified in the LocationProviderAdapter javadocs to ensure that other components in the Navigation SDK behave correctly. 
 
 Here's a description of the key methods in the `LocationProviderAdapter` class:
 
@@ -79,9 +79,9 @@ Deinitialize the adapter. This is done when as soon as possible after the naviga
 `public void addLocationListener(locationListener listener)`  
 Adds a listener that is called when a location update is received. If no listeners existed, this will cause recurring location updates to be requested from the underlying location service.
 
-The Navigation SDK sample app provides an example implementation of `LocationProviderAdapter` -- specifically the class `MapzenLocationProviderAdapter`. We use _Mapzen Lost_ as the default location provider because we feel it provides good location results without needing to pull in the Google Play Services dependency. For more info on the _Mapzen Lost_ library, see: [https://github.com/mapzen/lost](https://github.com/mapzen/lost)
+The Navigation SDK sample app provides an example implementation of `LocationProviderAdapter` -- specifically the class `GoogleLocationProviderAdapter`. We use _Mapzen Lost_ as the default location provider because we feel it provides good location results without needing to pull in the Google Play Services dependency. For more info on the _Mapzen Lost_ library, see: [https://github.com/mapzen/lost](https://github.com/mapzen/lost)
 
-Developers can study the implementation of the `MapzenLocationProviderAdapter` as a reference for how the `LocationProviderAdapter` abstract class should be extended -- and construct their own implementation using whichever location provider they prefer. Our team also uses custom "mocked" implementations of `LocationProviderAdapter` that fire a pre-defined set of route-locations -- which are useful, for example, when writing functional tests for a navigation application.
+Developers can study the implementation of the `GoogleLocationProviderAdapter` as a reference for how the `LocationProviderAdapter` abstract class should be extended -- and construct their own implementation using whichever location provider they prefer. Our team also uses custom "mocked" implementations of `LocationProviderAdapter` that fire a pre-defined set of route-locations -- which are useful, for example, when writing functional tests for a navigation application.
 
 
 #### Using a Foreground (Notification) Service to Ensure Location Updates
