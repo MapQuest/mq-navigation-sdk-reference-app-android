@@ -2,11 +2,10 @@ package com.mapquest.navigation.sampleapp;
 
 import android.app.Application;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import com.mapquest.mapping.MapQuest;
 import com.mapquest.navigation.location.LocationProviderAdapter;
-import com.mapquest.navigation.sampleapp.location.MapzenLocationProviderAdapter;
+import com.mapquest.navigation.sampleapp.location.GoogleLocationProviderAdapter;
 
 public class MQNavigationSampleApplication extends Application {
     @NonNull
@@ -18,7 +17,7 @@ public class MQNavigationSampleApplication extends Application {
 
         MapQuest.start(getApplicationContext());
 
-        mLocationProviderAdapter = new MapzenLocationProviderAdapter(this);
+        mLocationProviderAdapter = new GoogleLocationProviderAdapter(this);
     }
 
     @NonNull
