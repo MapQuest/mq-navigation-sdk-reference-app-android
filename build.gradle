@@ -24,7 +24,7 @@ allprojects {
     repositories {
         jcenter()
         maven {
-            url "https://maven.google.com"
+            url 'https://maven.google.com'
         }
         // NOTE: this is the public repo for the MapQuest Navigation SDK
         maven {

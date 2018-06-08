@@ -20,7 +20,7 @@ android {
         targetSdkVersion 27
         versionCode appVersionCode
         versionName "3.3.0"
-        multiDexEnabled true
+        setMultiDexEnabled(true)
     }
     buildTypes {
         release {
@@ -33,7 +33,11 @@ android {
         variant.resValue "string", "API_KEY", getApiKey()
         variant.buildConfigField("String", "REFERER_KEY", getRefererKey())
         variant.resValue "string", "REFERER_KEY", getRefererKey()
+    }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
@@ -61,7 +65,7 @@ dependencies {
     implementation('com.mapquest:navigation:3.3.0')
     implementation('com.mapzen.android:lost:3.0.4')            // used for GPS Location Acquisition (see notes)
 
-    implementation ('com.mapquest:mapping-android-sdk:2.0.1') { // for Mapping SDK MapView; displays route to navigate
+    implementation ('com.mapquest:mapping-android-sdk:2.0.8.2') { // for Mapping SDK MapView; displays route to navigate
         exclude group: 'com.android.support'            // (note: in your app, you might omit this 'exclude')
     }
 
@@ -71,5 +75,5 @@ dependencies {
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
 
     // multidex support lib (required when minSdkVersion is below 21)
-    implementation 'com.android.support:multidex:1.0.1'
+    implementation 'com.android.support:multidex:1.0.2'
 }
