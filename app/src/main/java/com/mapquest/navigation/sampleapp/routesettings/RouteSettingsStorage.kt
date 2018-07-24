@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.mapquest.navigation.internal.util.SingletonHolder
 import com.mapquest.navigation.model.RouteOptionType
+import com.mapquest.navigation.model.RouteOptionsBase
 import com.mapquest.navigation.model.SystemOfMeasurement
 
 class RouteSettingsStorage private constructor(private val sharedPreferences: SharedPreferences) {
@@ -21,7 +22,8 @@ class RouteSettingsStorage private constructor(private val sharedPreferences: Sh
         SEASONAL_CLOSURES,
         RALLY_MODE,
         SYSTEM_OF_MEASUREMENT,
-        LANGUAGE_CODE
+        LANGUAGE_CODE,
+        ROUTE_TYPE
     }
 
     private constructor(context: Context): this(context.getSharedPreferences(SHARED_PREFERENCES_KEY, Context.MODE_PRIVATE))
@@ -90,6 +92,20 @@ class RouteSettingsStorage private constructor(private val sharedPreferences: Sh
     fun writeRallyMode(routeOptionKey: RouteOptionKey, rallyMode: Boolean) {
         sharedPreferences.edit()
                 .putBoolean(routeOptionKey.name, rallyMode)
+                .apply()
+    }
+
+    /**
+     * Read route type from local storage
+     */
+    fun readRouteType(): RouteOptionsBase.RouteType = RouteOptionsBase.RouteType.valueOf(sharedPreferences.getString(RouteOptionKey.ROUTE_TYPE.name, RouteOptionsBase.RouteType.FASTEST.name))
+
+    /**
+     * Write route type to local storage
+     */
+    fun writeRouteType(routeOptionKey: RouteOptionKey, routeType: String) {
+        sharedPreferences.edit()
+                .putString(routeOptionKey.name, routeType)
                 .apply()
     }
 

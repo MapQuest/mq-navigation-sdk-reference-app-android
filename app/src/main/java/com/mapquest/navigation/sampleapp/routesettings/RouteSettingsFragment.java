@@ -83,6 +83,9 @@ public class RouteSettingsFragment extends Fragment implements IRouteSettingsVie
     @BindView(R.id.rallyModeSpinner)
     protected AppCompatSpinner mRallyModeSpinner;
 
+    @BindView(R.id.routeTypeSpinner)
+    protected AppCompatSpinner mRouteTypeSpinner;
+
     @BindView(R.id.systemOfMeasurementSpinner)
     protected AppCompatSpinner mSystemOfMeasurementSpinner;
 
@@ -203,6 +206,7 @@ public class RouteSettingsFragment extends Fragment implements IRouteSettingsVie
         mSystemOfMeasurementSpinner.setOnItemSelectedListener(new SystemOfMeasurementOnItemSelectedListener(RouteSettingsStorage.RouteOptionKey.SYSTEM_OF_MEASUREMENT));
         mNavigationLanguageSpinner.setOnItemSelectedListener(new NavigationLanguageOnItemSelectedListener(RouteSettingsStorage.RouteOptionKey.LANGUAGE_CODE));
         mRallyModeSpinner.setOnItemSelectedListener(new RallyModeOnItemSelectedListener(RouteSettingsStorage.RouteOptionKey.RALLY_MODE));
+        mRouteTypeSpinner.setOnItemSelectedListener(new RouteTypeOnItemSelectedListener(RouteSettingsStorage.RouteOptionKey.ROUTE_TYPE));
     }
 
     @Override
@@ -270,6 +274,12 @@ public class RouteSettingsFragment extends Fragment implements IRouteSettingsVie
     }
 
     @Override
+    public void setRouteType(String routeType) {
+        int position = getPositionFromRouteType(routeType);
+        mRouteTypeSpinner.setSelection(position);
+    }
+
+    @Override
     public void setSystemOfMeasurementOption(SystemOfMeasurement systemOfMeasurement) {
         int position = systemOfMeasurement.ordinal();
         mSystemOfMeasurementSpinner.setSelection(position);
@@ -306,6 +316,18 @@ public class RouteSettingsFragment extends Fragment implements IRouteSettingsVie
 
     private int getPositionFromRallyMode(Boolean rallyMode) {
         return rallyMode ? 0 : 1;
+    }
+
+    private int getPositionFromRouteType(String routeType) {
+        switch (routeType.toLowerCase()) {
+            case "pedestrian":
+                return 2;
+            case "shortest":
+                return 1;
+            case "fastest":
+            default:
+                return 0;
+        }
     }
 
     private class RouteOptionOnItemSelectedListener implements AdapterView.OnItemSelectedListener {
@@ -426,6 +448,38 @@ public class RouteSettingsFragment extends Fragment implements IRouteSettingsVie
                     return false;
                 default:
                     return false;
+            }
+        }
+    }
+
+    private class RouteTypeOnItemSelectedListener implements AdapterView.OnItemSelectedListener {
+
+        private final RouteSettingsStorage.RouteOptionKey mRouteOptionKey;
+
+        RouteTypeOnItemSelectedListener(RouteSettingsStorage.RouteOptionKey routeOptionKey) {
+            mRouteOptionKey = routeOptionKey;
+        }
+
+        @Override
+        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+            if (mRouteSettingsController != null) {
+                mRouteSettingsController.writeRouteTypeToModel(mRouteOptionKey, getRouteType(i));
+            }
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> adapterView) {}
+
+        private String getRouteType(int index) {
+            switch (index) {
+                case 0:
+                    return "FASTEST";
+                case 1:
+                    return "SHORTEST";
+                case 2:
+                    return "PEDESTRIAN";
+                default:
+                    return "FASTEST";
             }
         }
     }

@@ -24,4 +24,5 @@ public interface IRouteSettingsView {
     void setSystemOfMeasurementOption(SystemOfMeasurement systemOfMeasurement);
     void setLanguage(String languageCode);
     void setRallyMode(Boolean rallyMode);
+    void setRouteType(String routeType);
 }
