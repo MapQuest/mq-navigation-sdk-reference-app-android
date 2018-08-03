@@ -14,8 +14,8 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:contentInsetLeft="8dp"
-        android:contentInsetStart="8dp"
+        app:contentInsetRight="8dp"
+        app:contentInsetEnd="8dp"
         app:contentInsetLeft="8dp"
         app:contentInsetStart="8dp"
         android:minHeight="70dp">
@@ -30,8 +30,7 @@
                 android:id="@+id/fake_search_bar_view"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/search_bar_height"
-                app:placeHolder="true"
-                />
+                app:placeHolder="true"/>
         </RelativeLayout>
 
     </android.support.v7.widget.Toolbar>

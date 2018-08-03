@@ -25,6 +25,8 @@
 
     <dimen name="route_name_text_size">24sp</dimen>
     <dimen name="route_name_margin">10dp</dimen>
+    <dimen name="route_stop_view_text_size">20sp</dimen>
+
 
     <!-- Search Ahead -->
     <dimen name="search_ahead_list_item_icon_bottom_margin">2dp</dimen>

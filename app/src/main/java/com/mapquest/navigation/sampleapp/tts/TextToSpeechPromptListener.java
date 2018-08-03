@@ -14,11 +14,11 @@ public class TextToSpeechPromptListener implements PromptListener {
     @Nullable
     private PromptSpeechListener mPromptSpeechListener;
 
-    TextToSpeechPromptListener(@NonNull TextToSpeechManager textToSpeechManager) {
+    public TextToSpeechPromptListener(@NonNull TextToSpeechManager textToSpeechManager) {
         mTextToSpeechManager = textToSpeechManager;
     }
 
-    void setPromptSpeechListener(@Nullable PromptSpeechListener promptSpeechListener) {
+    public void setPromptSpeechListener(@Nullable PromptSpeechListener promptSpeechListener) {
         mPromptSpeechListener = promptSpeechListener;
     }
 

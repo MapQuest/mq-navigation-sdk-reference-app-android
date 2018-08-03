@@ -25,5 +25,5 @@ public abstract class AudioFocusLossListener implements OnAudioFocusChangeListen
         }
     }
 
-    protected abstract void onAudioFocusLost(int focusChange);
+    public abstract void onAudioFocusLost(int focusChange);
 }

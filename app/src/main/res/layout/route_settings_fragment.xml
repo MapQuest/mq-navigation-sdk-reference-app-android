@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:background="#99000000"
+    android:focusable="true">
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        >
+
+        <!-- Route Options -->
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/constraintLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/white"
+            android:elevation="2dp"
+            android:paddingBottom="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/stopsLayout">
+
+            <TextView
+                android:id="@+id/routeOptionsTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#FF6F84FA"
+                android:elevation="2dp"
+                android:padding="8dp"
+                android:text="@string/route_options_title"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+
+            <TextView
+                android:id="@+id/tollwaysTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/tollways_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/tollwaysSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/routeOptionsTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/tollwaysSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:entries="@array/route_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/tollwaysTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/tollwaysTextView"/>
+
+            <TextView
+                android:id="@+id/highwaysTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/highways_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/highwaysSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/tollwaysTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/highwaysSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/route_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/highwaysTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/highwaysTextView"/>
+
+            <TextView
+                android:id="@+id/ferriesTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/ferries_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/ferriesSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/highwaysTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/ferriesSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/route_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/ferriesTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/ferriesTextView"/>
+
+            <TextView
+                android:id="@+id/unpavedTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/unpaved_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/unpavedSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/ferriesTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/unpavedSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/route_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/unpavedTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/unpavedTextView"/>
+
+            <TextView
+                android:id="@+id/internationalBordersTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/international_borders_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/internationalBordersSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/unpavedTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/internationalBordersSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/route_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/internationalBordersTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/internationalBordersTextView"/>
+
+            <TextView
+                android:id="@+id/seasonalClosuresTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/seasonal_closures_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/seasonalClosuresSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/internationalBordersTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/seasonalClosuresSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/route_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/seasonalClosuresTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/seasonalClosuresTextView"/>
+
+            <TextView
+                android:id="@+id/rallyModeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/rally_mode_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/rallyModeSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/seasonalClosuresTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/rallyModeSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/rally_option_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/rallyModeTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/rallyModeTextView"/>
+
+            <TextView
+                android:id="@+id/systemOfMeasurementTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/system_of_measurement_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/rallyModeSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/rallyModeTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/systemOfMeasurementSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/system_of_measurement_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/systemOfMeasurementTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/systemOfMeasurementTextView"/>
+
+            <TextView
+                android:id="@+id/navigationLanguageCodeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/navigation_language_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/rallyModeSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/systemOfMeasurementTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/navigationLanguageSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/navigation_language_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/navigationLanguageCodeTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/navigationLanguageCodeTextView"/>
+
+        </android.support.constraint.ConstraintLayout>
+
+        <!-- Route Stops -->
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/stopsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="16dp"
+            android:background="@android:color/white"
+            android:elevation="2dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/searchBarView"
+            >
+
+            <TextView
+                android:id="@+id/routeStopsTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="22sp"
+                android:text="@string/route_stops_title"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:elevation="2dp"
+                android:background="#FF6F84FA"
+                android:padding="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                />
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/destinationsRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                app:layout_constraintTop_toBottomOf="@+id/routeStopsTextView"
+                />
+
+        </android.support.constraint.ConstraintLayout>
+
+        <!-- Search Bar -->
+        <com.mapquest.navigation.sampleapp.searchahead.SearchBarView
+            android:id="@+id/searchBarView"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/search_bar_height"
+            android:elevation="2dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <!-- Search Ahead List -->
+        <ListView
+            android:id="@+id/searchAheadListView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="1dp"
+            android:background="@android:color/background_light"
+            android:divider="@drawable/vertical_list_item_divider"
+            android:dividerHeight="@dimen/default_divider_height"
+            android:elevation="2dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/searchBarView"/>
+
+    </android.support.constraint.ConstraintLayout>
+</ScrollView>

@@ -38,7 +38,6 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapquest.mapping.maps.MapView;
 import com.mapquest.mapping.maps.RoutePolylinePresenter;
 import com.mapquest.navigation.NavigationManager;
-import com.mapquest.navigation.dataclient.listener.RouteResponseListener;
 import com.mapquest.navigation.dataclient.listener.TrafficResponseListener;
 import com.mapquest.navigation.internal.collection.CollectionsUtil;
 import com.mapquest.navigation.internal.logging.AccumulatingLogger;
@@ -50,6 +49,7 @@ import com.mapquest.navigation.listener.DefaultNavigationProgressListener;
 import com.mapquest.navigation.listener.EtaResponseListener;
 import com.mapquest.navigation.listener.NavigationProgressListener;
 import com.mapquest.navigation.listener.NavigationStateListener;
+import com.mapquest.navigation.listener.RerouteListener;
 import com.mapquest.navigation.listener.SpeedLimitSpanListener;
 import com.mapquest.navigation.location.LocationProviderAdapter;
 import com.mapquest.navigation.model.CongestionSpan;
@@ -100,12 +100,12 @@ import static com.mapquest.navigation.sampleapp.util.UiUtil.toast;
 
 public class NavigationActivity extends AppCompatActivity implements LifecycleRegistryOwner {
 
-    private static final String ROUTE_KEY = "route";
-    private static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
+    public static final String ROUTE_KEY = "route";
+    public static final String USER_TRACKING_CONSENT_KEY = "user_tracking_consent";
 
     private static final String TAG = LogUtil.generateLoggingTag(NavigationActivity.class);
     private static final int PATH_WIDTH = 5;
-    private static final String DISPLAY_DEBUG_INFO_KEY = "display_debug_info";
+    protected static final String DISPLAY_DEBUG_INFO_KEY = "display_debug_info";
     private static final String FOLLOWING_KEY = "following";
 
     private static final Map<Maneuver.Type, Integer> MANEUVER_DRAWABLE_IDS_BY_TYPE = DrawableMappingUtil.buildManeuverDrawableIdMapping();
@@ -116,32 +116,32 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     private LifecycleRegistry lifecycleRegistry = new LifecycleRegistry(this);
 
-    private ServiceConnection mServiceConnection;
-    private NavigationNotificationService mNotificationService;
-    private static NavigationManager mNavigationManager;
-    private LocationProviderAdapter mLocationProviderAdapter;
+    protected ServiceConnection mServiceConnection;
+    protected com.mapquest.navigation.sampleapp.service.NavigationNotificationService mNotificationService;
+    protected static NavigationManager mNavigationManager;
+    protected LocationProviderAdapter mLocationProviderAdapter;
 
     private List<PolylineOptions> mRoutePolylineOptionsList = new ArrayList<>();
-    private Marker mRouteStartMarker;
+    protected Marker mRouteStartMarker;
     private Marker mRouteEndMarker;
     private Marker mClosestRoutePointMarker;
     private Marker mUserLocationMarker;
-    private List<Marker> mGuidancePromptMarkers = new ArrayList<>();
+    protected List<Marker> mGuidancePromptMarkers = new ArrayList<>();
     @Nullable
-    private Route mInitialRoute;
+    protected Route mInitialRoute;
 
     private NavigationProgressListener mMapCenteringNavigationProgressListener = new MapCenteringNavigationProgressListener();
-    private NavigationStateListener mNavigationStateListener = new UiUpdatingNavigationStateListener();
-    private RouteResponseListener mRouteResponseListener = new UiUpdatingRouteResponseListener();
+    protected NavigationStateListener mNavigationStateListener = new UiUpdatingNavigationStateListener();
+    private RerouteListener mRerouteListener = new UiUpdatingRerouteListener();
     private NavigationProgressListener mNavigationProgressListener = new UiUpdatingNavigationProgressListener();
-    private TrafficResponseListener mTrafficResponseListener = new UiUpdatingTrafficResponseListener();
-    private SpeedLimitSpanListener mSpeedLimitSpanListener = new UiUpdatingSpeedLimitSpanListener();
-    private EtaResponseListener mEtaResponseListener = new UiEtaResponseListener();
+    protected TrafficResponseListener mTrafficResponseListener = new UiUpdatingTrafficResponseListener();
+    protected SpeedLimitSpanListener mSpeedLimitSpanListener = new UiUpdatingSpeedLimitSpanListener();
+    protected EtaResponseListener mEtaResponseListener = new UiEtaResponseListener();
 
     @BindView(R.id.map)
     protected MapView mMap;
-    private MapboxMap mMapController;
-    private RoutePolylinePresenter mRoutePolylinePresenter;
+    protected MapboxMap mMapController;
+    protected RoutePolylinePresenter mRoutePolylinePresenter;
 
     private NarrativeAdapter mDirectionsListAdapter;
 
@@ -186,6 +186,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     @BindView(R.id.school_zone_max_speed_limit_label)
     protected TextView mSchoolZoneMaxSpeedLimitLabel;
     @BindView(R.id.maneuver_lanes)
+    protected
     LaneGuidanceBar mLaneGuidanceBar;
     @BindView(R.id.skipLegIcon)
     protected ImageView mSkipLegImageView;
@@ -241,11 +242,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     private ProgressDialog mProgressDialog;
 
-    private Route mRoute;
+    protected Route mRoute;
 
-    private boolean mShouldRestoreFollowMode;
-    private LocationObservation mLastLocationObservation;
-    private boolean mUserTrackingConsentGranted;
+    protected boolean mShouldRestoreFollowMode;
+    protected LocationObservation mLastLocationObservation;
+    protected boolean mUserTrackingConsentGranted;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -326,7 +327,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void setZoomLevel(int level) {
+    protected void setZoomLevel(int level) {
         mMapController.moveCamera(CameraUpdateFactory.newCameraPosition(
                 createUpdatedCameraPositionFromCurrent(level)));
     }
@@ -449,7 +450,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         return lifecycleRegistry;
     }
 
-    private void updateDirectionsList() {
+    protected void updateDirectionsList() {
         RouteLeg currentRouteLeg = mNavigationManager.getCurrentRouteLeg();
         if (currentRouteLeg != null) {
             List<Instruction> instructionList = currentRouteLeg.getInstructions();
@@ -473,6 +474,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     private void addNavigationListeners(final NavigationManager manager) {
         manager.addNavigationStateListener(mNavigationStateListener);
+        manager.addRerouteListener(mRerouteListener);
         manager.addAndNotifyProgressListener(mNavigationProgressListener);
         manager.addTrafficResponseListener(mTrafficResponseListener);
         manager.addAndNotifySpeedLimitSpanListener(mSpeedLimitSpanListener);
@@ -481,6 +483,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     private void removeNavigationListeners() {
         mNavigationManager.removeNavigationStateListener(mNavigationStateListener);
+        mNavigationManager.removeRerouteListener(mRerouteListener);
         mNavigationManager.removeProgressListener(mNavigationProgressListener);
         mNavigationManager.removeTrafficResponseListener(mTrafficResponseListener);
         mNavigationManager.removeSpeedLimitSpanListener(mSpeedLimitSpanListener);
@@ -530,7 +533,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void updateUserLocationMarker(Location location) {
+    protected void updateUserLocationMarker(Location location) {
         clearUserLocationMarker();
 
         if(mMapController != null) {
@@ -546,7 +549,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void updateClosestRoutePoint(Coordinate closestRoutePoint) {
+    protected void updateClosestRoutePoint(Coordinate closestRoutePoint) {
         if(mClosestRoutePointMarker != null) {
             clearClosestRoutePointMarker();
         }
@@ -606,7 +609,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void clearMarkup() {
+    protected void clearMarkup() {
         clearRouteEndMarkers();
         clearGuidancePromptMarkers();
         clearRoutePath();
@@ -614,7 +617,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         clearUserLocationMarker();
     }
 
-    private void mapRoute(Route route) {
+    protected void mapRoute(Route route) {
         clearMarkup();
         if(mMapController == null) {
             mInitialRoute = route;
@@ -686,7 +689,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void displayProgressDialog(String title, String message) {
+    protected void displayProgressDialog(String title, String message) {
         dismissProgressDialog();
 
         mProgressDialog = new ProgressDialog(this);
@@ -696,13 +699,13 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         mProgressDialog.show();
     }
 
-    private void dismissProgressDialog() {
+    protected void dismissProgressDialog() {
         if(mProgressDialog != null) {
             mProgressDialog.dismiss();
         }
     }
 
-    private void updateNextManeuverIcon(Maneuver maneuver) {
+    protected void updateNextManeuverIcon(Maneuver maneuver) {
         if(maneuver == null || !MANEUVER_DRAWABLE_IDS_BY_TYPE.containsKey(maneuver.getType())) {
             mNextManeuverIcon.setVisibility(View.INVISIBLE);
         } else {
@@ -711,7 +714,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void updateNextManeuverLabel(Maneuver maneuver) {
+    protected void updateNextManeuverLabel(Maneuver maneuver) {
         if(maneuver == null) {
             mNextManeuverLabel.setText("");
         } else {
@@ -722,7 +725,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void updateNextManeuverDistanceLabel(Double distance, SystemOfMeasurement systemOfMeasurement, String languageCode) {
+    protected void updateNextManeuverDistanceLabel(Double distance, SystemOfMeasurement systemOfMeasurement, String languageCode) {
         String maneuverDistance = maneuverDistanceString(distance, systemOfMeasurement, (languageCode != null) ? languageCode : "en_US");
         mNextManeuverDistanceLabel.setText(maneuverDistance);
     }
@@ -739,11 +742,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         }
     }
 
-    private void updateStatusLabel(String status) {
+    protected void updateStatusLabel(String status) {
         mStatusLabel.setText(status);
     }
 
-    private static LatLng toLatLng(Coordinate coordinate) {
+    protected static LatLng toLatLng(Coordinate coordinate) {
         return new LatLng(coordinate.getLatitude(), coordinate.getLongitude());
     }
 
@@ -791,7 +794,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 .build();
     }
 
-    private void updateRouteUi(Route route) {
+    protected void updateRouteUi(Route route) {
         if ((route != null)) {
             mapRoute(route);
             for (RouteLeg routeLeg : route.getLegs()) {
@@ -901,20 +904,25 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     }
 
 
-    private class UiUpdatingRouteResponseListener implements RouteResponseListener {
+    private class UiUpdatingRerouteListener implements RerouteListener {
         @Override
-        public void onRequestMade() {
+        public void onRerouteWouldOccur(Location location) {
+            updateStatusLabel("Off-route");
+        }
+
+        @Override
+        public void onRerouteRequested(Location location) {
             Toast.makeText(getApplicationContext(), "Off Route. Requesting updated route...", Toast.LENGTH_LONG).show();
         }
 
         @Override
-        public void onRouteRetrieved(Route route) {
+        public void onRerouteReceived(Route route) {
             updateRouteUi(route);
             updateDirectionsList();
         }
 
         @Override
-        public void onRequestFailed(@Nullable Integer httpStatusCode, @Nullable IOException exception) {
+        public void onRerouteFailed() {
             toast(NavigationActivity.this, "Route request failed.");
         }
     }
@@ -1126,7 +1134,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         public void onRequestMade() {}
     }
 
-    class FollowModeExitingMapTouchListener implements OnTouchListener {
+    public class FollowModeExitingMapTouchListener implements OnTouchListener {
         @Override
         public boolean onTouch(View view, MotionEvent event) {
             exitFollowMode();
