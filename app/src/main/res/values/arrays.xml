@@ -11,6 +11,12 @@
         <item>NO</item>
     </string-array>
 
+    <string-array name="route_type_selections">
+        <item>FASTEST</item>
+        <item>SHORTEST</item>
+        <item>PEDESTRIAN</item>
+    </string-array>
+
     <string-array name="system_of_measurement_selections">
         <item>US</item>
         <item>Metric</item>

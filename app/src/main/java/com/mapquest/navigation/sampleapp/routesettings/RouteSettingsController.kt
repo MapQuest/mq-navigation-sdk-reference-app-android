@@ -81,7 +81,9 @@ class RouteSettingsController(private val searchAheadService: SearchAheadService
 
         routeSettingsView?.setLanguage(routeSettingsStorage.readLanguageCode())
 
-        routeSettingsView?.setRallyMode(routeSettingsStorage.readRallyMode());
+        routeSettingsView?.setRallyMode(routeSettingsStorage.readRallyMode())
+
+        routeSettingsView?.setRouteType(routeSettingsStorage.readRouteType().name)
     }
 
     fun writeRouteOptionToModel(routeOptionKey: RouteSettingsStorage.RouteOptionKey, routeOptionType: RouteOptionType) {
@@ -97,6 +99,10 @@ class RouteSettingsController(private val searchAheadService: SearchAheadService
     }
 
     fun writeRallyModeToModel(routeOptionKey: RouteSettingsStorage.RouteOptionKey, rallyMode: Boolean) {
-        routeSettingsStorage.writeRallyMode(routeOptionKey, rallyMode);
+        routeSettingsStorage.writeRallyMode(routeOptionKey, rallyMode)
+    }
+
+    fun writeRouteTypeToModel(routeOptionKey: RouteSettingsStorage.RouteOptionKey, routeType: String) {
+        routeSettingsStorage.writeRouteType(routeOptionKey, routeType)
     }
 }

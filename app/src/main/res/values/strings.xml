@@ -32,6 +32,7 @@
     <string name="international_borders_option">International Borders</string>
     <string name="seasonal_closures_option">Seasonal Closures</string>
     <string name="rally_mode_option">Rally Mode</string>
+    <string name="route_type_option">Route Type</string>
     <string name="system_of_measurement_option">Measurement Units</string>
     <string name="navigation_language_option">Navigation Language</string>
 

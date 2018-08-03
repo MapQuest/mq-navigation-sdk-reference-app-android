@@ -205,17 +205,17 @@
                 app:layout_constraintTop_toTopOf="@+id/seasonalClosuresTextView"/>
 
             <TextView
-                android:id="@+id/rallyModeTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="24dp"
-                android:layout_marginRight="24dp"
-                android:layout_marginTop="24dp"
-                android:text="@string/rally_mode_option"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@+id/rallyModeSpinner"
-                app:layout_constraintTop_toBottomOf="@+id/seasonalClosuresTextView"/>
+            android:id="@+id/rallyModeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:layout_marginRight="24dp"
+            android:layout_marginTop="24dp"
+            android:text="@string/rally_mode_option"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@+id/rallyModeSpinner"
+            app:layout_constraintTop_toBottomOf="@+id/routeTypeTextView"/>
 
             <android.support.v7.widget.AppCompatSpinner
                 android:id="@+id/rallyModeSpinner"
@@ -230,6 +230,33 @@
                 app:layout_constraintBottom_toBottomOf="@+id/rallyModeTextView"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/rallyModeTextView"/>
+
+            <TextView
+                android:id="@+id/routeTypeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="24dp"
+                android:text="@string/route_type_option"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/routeTypeSpinner"
+                app:layout_constraintTop_toBottomOf="@+id/seasonalClosuresTextView"/>
+
+            <android.support.v7.widget.AppCompatSpinner
+                android:id="@+id/routeTypeSpinner"
+                style="@android:style/Widget.Holo.Light.Spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="8dp"
+                android:entries="@array/route_type_selections"
+                android:spinnerMode="dialog"
+                app:layout_constraintBottom_toBottomOf="@+id/routeTypeTextView"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/routeTypeTextView"/>
 
             <TextView
                 android:id="@+id/systemOfMeasurementTextView"
