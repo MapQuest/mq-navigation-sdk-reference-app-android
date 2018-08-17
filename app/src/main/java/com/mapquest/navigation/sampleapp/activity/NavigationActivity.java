@@ -58,6 +58,7 @@ import com.mapquest.navigation.model.Instruction;
 import com.mapquest.navigation.model.Maneuver;
 import com.mapquest.navigation.model.Route;
 import com.mapquest.navigation.model.RouteLeg;
+import com.mapquest.navigation.model.RouteOptionsBase;
 import com.mapquest.navigation.model.RouteStoppedReason;
 import com.mapquest.navigation.model.SpeedLimit;
 import com.mapquest.navigation.model.SpeedLimitSpan;
@@ -127,8 +128,6 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     private Marker mClosestRoutePointMarker;
     private Marker mUserLocationMarker;
     protected List<Marker> mGuidancePromptMarkers = new ArrayList<>();
-    @Nullable
-    protected Route mInitialRoute;
 
     private NavigationProgressListener mMapCenteringNavigationProgressListener = new MapCenteringNavigationProgressListener();
     protected NavigationStateListener mNavigationStateListener = new UiUpdatingNavigationStateListener();
@@ -209,9 +208,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         Log.d(TAG, "centerOnUserLocation() mLastLocationObservation: " + mLastLocationObservation);
 
         if (mLastLocationObservation != null) {
+            double lat = isWalking()? mLastLocationObservation.getRawGpsLocation().getLatitude() : mLastLocationObservation.getSnappedLocation().getLatitude();
+            double lng = isWalking()? mLastLocationObservation.getRawGpsLocation().getLatitude() : mLastLocationObservation.getSnappedLocation().getLatitude();
+
             mMapController.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                    new LatLng(mLastLocationObservation.getSnappedLocation().getLatitude(),
-                            mLastLocationObservation.getSnappedLocation().getLongitude()),
+                    new LatLng(lat,lng),
                     CENTER_ON_USER_ZOOM_LEVEL));
             enterFollowMode();
 
@@ -273,10 +274,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 mMap.setOnTouchListener(new FollowModeExitingMapTouchListener());
 
                 setZoomLevel(16);
-                if (mInitialRoute != null) {
-                    mapRoute(mInitialRoute);
+                if (mRoute != null) {
+                    mapRoute(mRoute);
                 }
-                mInitialRoute = null;
 
                 // bind to our Navigation Service (which provides and manages a NavigationManager instance)
                 mServiceConnection = initializeNavigationService(mRoute);
@@ -330,6 +330,14 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     protected void setZoomLevel(int level) {
         mMapController.moveCamera(CameraUpdateFactory.newCameraPosition(
                 createUpdatedCameraPositionFromCurrent(level)));
+    }
+
+    public boolean isWalking() {
+        if(mRoute != null){
+            return mRoute.getRouteOptions().getRouteType() == RouteOptionsBase.RouteType.PEDESTRIAN;
+        }
+
+        return false;
     }
 
     @Override
@@ -578,11 +586,10 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
                 public void run() {
                     Log.d(TAG, "enterFollowMode() delayed runnable; mMapController: " + mMapController + " mLastLocationObservation: " + mLastLocationObservation);
                     if((mMapController != null) && (mLastLocationObservation != null)) {
-                        moveZoomAndTiltMap(
-                                mLastLocationObservation.getSnappedLocation().getLatitude(),
-                                mLastLocationObservation.getSnappedLocation().getLongitude(),
-                                CENTER_ON_USER_ZOOM_LEVEL, FOLLOW_MODE_TILT_VALUE_DEGREES
-                        );
+                        double lat = isWalking()? mLastLocationObservation.getRawGpsLocation().getLatitude() : mLastLocationObservation.getSnappedLocation().getLatitude();
+                        double lng = isWalking()? mLastLocationObservation.getRawGpsLocation().getLatitude() : mLastLocationObservation.getSnappedLocation().getLatitude();
+
+                        moveZoomAndTiltMap(lat, lng, CENTER_ON_USER_ZOOM_LEVEL, FOLLOW_MODE_TILT_VALUE_DEGREES);
                     }
                 }
             }, 600); // do this 600ms later so that mapController and last-location will be non-null
@@ -598,11 +605,10 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         if(mFollowing) {
             mNavigationManager.removeProgressListener(mMapCenteringNavigationProgressListener);
             if (mLastLocationObservation != null) {
-                moveZoomAndTiltMap(
-                        mLastLocationObservation.getSnappedLocation().getLatitude(),
-                        mLastLocationObservation.getSnappedLocation().getLongitude(),
-                        CENTER_ON_USER_ZOOM_LEVEL, 0
-                );
+                double lat = isWalking()? mLastLocationObservation.getRawGpsLocation().getLatitude() : mLastLocationObservation.getSnappedLocation().getLatitude();
+                double lng = isWalking()? mLastLocationObservation.getRawGpsLocation().getLatitude() : mLastLocationObservation.getSnappedLocation().getLatitude();
+
+                moveZoomAndTiltMap(lat, lng, CENTER_ON_USER_ZOOM_LEVEL, 0);
             }
             mFollowButton.setVisibility(View.VISIBLE);
             mFollowing = false;
@@ -620,9 +626,11 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     protected void mapRoute(Route route) {
         clearMarkup();
         if(mMapController == null) {
-            mInitialRoute = route;
             return;
         }
+
+        // Update the stored route to the latest route object we map
+        mRoute = route;
 
         // map all route-leg segments (with path colors based on traffic-conditions)
         clearRoutePath();
@@ -933,7 +941,9 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         public void onLocationObservationReceived(LocationObservation locationObservation) {
             mLastLocationObservation = locationObservation;
             updateUserLocationMarker(locationObservation.getRawGpsLocation());
-            updateClosestRoutePoint(locationObservation.getSnappedLocation());
+            if(!isWalking()){
+                updateClosestRoutePoint(locationObservation.getSnappedLocation());
+            }
             updateNextManeuverDistanceLabel(
                     locationObservation.getDistanceToUpcomingManeuver(),
                     mRoute.getRouteOptions().getSystemOfMeasurementForDisplayText(),
