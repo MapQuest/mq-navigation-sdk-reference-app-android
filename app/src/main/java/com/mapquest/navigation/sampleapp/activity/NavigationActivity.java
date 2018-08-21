@@ -40,6 +40,7 @@ import com.mapquest.mapping.maps.RoutePolylinePresenter;
 import com.mapquest.navigation.NavigationManager;
 import com.mapquest.navigation.dataclient.listener.TrafficResponseListener;
 import com.mapquest.navigation.internal.collection.CollectionsUtil;
+import com.mapquest.navigation.internal.heading.HeadingManager;
 import com.mapquest.navigation.internal.logging.AccumulatingLogger;
 import com.mapquest.navigation.internal.unit.Duration;
 import com.mapquest.navigation.internal.unit.Speed;
@@ -128,6 +129,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     private Marker mClosestRoutePointMarker;
     private Marker mUserLocationMarker;
     protected List<Marker> mGuidancePromptMarkers = new ArrayList<>();
+    protected float mCurrentHeading = -1;
 
     private NavigationProgressListener mMapCenteringNavigationProgressListener = new MapCenteringNavigationProgressListener();
     protected NavigationStateListener mNavigationStateListener = new UiUpdatingNavigationStateListener();
@@ -136,6 +138,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
     protected TrafficResponseListener mTrafficResponseListener = new UiUpdatingTrafficResponseListener();
     protected SpeedLimitSpanListener mSpeedLimitSpanListener = new UiUpdatingSpeedLimitSpanListener();
     protected EtaResponseListener mEtaResponseListener = new UiEtaResponseListener();
+    private HeadingManager.HeadingListener mHeadingListener = new UiHeadingListener();
 
     @BindView(R.id.map)
     protected MapView mMap;
@@ -239,7 +242,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
 
     @BindView(R.id.follow)
     protected TextView mFollowButton;
-    private boolean mFollowing;
+    protected boolean mFollowing;
 
     private ProgressDialog mProgressDialog;
 
@@ -487,6 +490,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         manager.addTrafficResponseListener(mTrafficResponseListener);
         manager.addAndNotifySpeedLimitSpanListener(mSpeedLimitSpanListener);
         manager.addEtaResponseListener(mEtaResponseListener);
+        manager.addHeadingListener(mHeadingListener);
     }
 
     private void removeNavigationListeners() {
@@ -496,6 +500,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         mNavigationManager.removeTrafficResponseListener(mTrafficResponseListener);
         mNavigationManager.removeSpeedLimitSpanListener(mSpeedLimitSpanListener);
         mNavigationManager.removeEtaResponseListener(mEtaResponseListener);
+        mNavigationManager.removeHeadingListener(mHeadingListener);
     }
     
     private String formatTimestampForLocalTimezone(long timestamp) {
@@ -778,7 +783,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
         mMapController.animateCamera(CameraUpdateFactory.newCameraPosition(position));
     }
 
-    private void animateCamera(double latitude, double longitude, double bearing, double zoom, double tilt) {
+    protected void animateCamera(double latitude, double longitude, double bearing, double zoom, double tilt) {
         if(mMapController == null) {
             return;
         }
@@ -859,7 +864,7 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             animateCamera(
                     locationObservation.getRawGpsLocation().getLatitude(),
                     locationObservation.getRawGpsLocation().getLongitude(),
-                    locationObservation.getRawGpsLocation().getBearing(),
+                    (isWalking() && mCurrentHeading != -1)? mCurrentHeading : locationObservation.getRawGpsLocation().getBearing(),
                     CENTER_ON_USER_ZOOM_LEVEL,
                     FOLLOW_MODE_TILT_VALUE_DEGREES);
         }
@@ -1150,6 +1155,19 @@ public class NavigationActivity extends AppCompatActivity implements LifecycleRe
             exitFollowMode();
             view.performClick();
             return false;
+        }
+    }
+
+    public class UiHeadingListener implements HeadingManager.HeadingListener {
+
+        @Override
+        public void onHeadingChanged(float heading) {
+            Log.v("Compass", String.format(Locale.getDefault(), "Heading was updated to: %.2f", heading));
+            mCurrentHeading = heading;
+            if(isWalking() && mFollowing){
+                animateCamera(mMapController.getCameraPosition().target.getLatitude(), mMapController.getCameraPosition().target.getLongitude(),
+                        heading, mMapController.getCameraPosition().zoom, mMapController.getCameraPosition().tilt);
+            }
         }
     }
 }
